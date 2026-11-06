@@ -18,7 +18,7 @@ Projeto de extensão do Centro Universitário Impacta: portal web da **Comissão
 6. Tudo **responsivo**.
 
 ## Dashboards (dados fictícios, enviados pela CPA)
-Os relatórios só abrem com a conta Google da Impacta logada no navegador. Lista em [`docs/dashboards.md`](docs/dashboards.md).
+Os relatórios só abrem com a conta Google da Impacta logada no navegador. Lista em [`docs/dashboards.md`](docs/dashboards.md). Cores e fontes em [`docs/identidade-visual.md`](docs/identidade-visual.md); indicadores em [`docs/kpis-cpa.md`](docs/kpis-cpa.md).
 
 Atenção: o login do portal **não** substitui a permissão do Looker. O avaliador do MEC não tem e-mail Impacta e vai precisar de uma solução própria (compartilhamento individual ou versão pública com dados agregados).
 
