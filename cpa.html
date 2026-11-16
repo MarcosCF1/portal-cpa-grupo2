@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portal da CPA – Faculdade Impacta</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{--bg:#fff;--soft:#F5F6F8;--ink:#14161A;--muted:#5E6673;--line:#E3E6EB;--brand:#E30613;--brand-d:#B80510;--graph:#14161A;--teal:#C40510;--ok:#138A4B;--err:#C40510;--accent:#E30613;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;position:relative}
+body::before{content:"";position:absolute;inset:0 0 auto 0;height:420px;background:radial-gradient(circle,#D5D9E0 1.2px,transparent 1.3px) 0 0/24px 24px;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent);pointer-events:none;z-index:0}
+header,main,footer{position:relative;z-index:1}
+header{background:rgba(255,255,255,.92);border-bottom:1px solid var(--line)}
+.bar{max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.logo{font-weight:700;font-size:19px;letter-spacing:-.02em;margin-right:auto;display:flex;align-items:center;gap:12px;line-height:1.1;cursor:pointer}
+.logo small{display:block;font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0;margin-top:2px}
+.mark{width:36px;height:36px;border-radius:10px;background:var(--brand);position:relative;flex:none;box-shadow:0 6px 16px -6px rgba(227,6,19,.7)}
+.mark::before{content:"";position:absolute;left:11px;top:9px;width:4px;height:4px;border-radius:50%;background:#fff}
+.mark::after{content:"";position:absolute;left:11px;top:16px;width:4px;height:11px;border-radius:2px;background:#fff;box-shadow:9px -7px 0 0 #fff,9px 0 0 0 #fff}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav a{color:var(--ink);text-decoration:none;padding:8px 13px;border-radius:8px;font-weight:500;font-size:14.5px}
+nav a:hover{background:var(--soft)}
+nav a[aria-current="page"]{color:var(--brand);background:#FDECEE;font-weight:700}
+.who{font-size:13px;display:flex;align-items:center;gap:10px;color:var(--muted)}
+.badge-role{background:var(--soft);border:1px solid var(--line);padding:5px 10px;border-radius:8px;color:var(--ink);font-weight:600}
+main{max-width:1120px;margin:0 auto;padding:40px 24px 72px}
+h1{font-size:clamp(28px,4.4vw,40px);line-height:1.08;margin:0 0 10px;letter-spacing:-.035em;font-weight:700}
+h2{font-size:20px;margin:0 0 8px;font-weight:700;letter-spacing:-.015em}
+.lead{color:var(--muted);margin:0 0 28px;max-width:65ch;font-size:17px}
+a{color:var(--teal)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+button,.btn{font:inherit;font-weight:600;font-size:14.5px;border:1px solid var(--brand);background:var(--brand);color:#fff;padding:10px 18px;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,box-shadow .15s}
+button:hover,.btn:hover{background:var(--brand-d);box-shadow:0 6px 18px -8px rgba(227,6,19,.8)}
+button:disabled{opacity:.6;cursor:not-allowed}
+button.alt,.btn.alt{background:#fff;color:var(--ink);border-color:var(--line)}
+button.alt:hover,.btn.alt:hover{background:var(--soft);box-shadow:none}
+button.acc{background:var(--graph);border-color:var(--graph);color:#fff}
+button.acc:hover{background:#000}
+button.sm{padding:6px 12px;font-size:13px;border-radius:8px}
+input,select,textarea{font:inherit;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px #FDECEE}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 5px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 1px 0 rgba(20,22,26,.03),0 12px 30px -22px rgba(20,22,26,.35)}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+.auth{display:grid;grid-template-columns:1.05fr 1fr;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 30px 60px -40px rgba(20,22,26,.5)}
+.auth-side{background:var(--graph);color:#fff;padding:44px 36px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:440px}
+.auth-side::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px) 0 0/32px 32px,linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px) 0 0/32px 32px}
+.auth-side::after{content:"";position:absolute;width:340px;height:340px;right:-120px;top:-120px;border-radius:50%;background:radial-gradient(circle,rgba(227,6,19,.85),transparent 68%)}
+.auth-side>*{position:relative;z-index:1}
+.auth-side h1{color:#fff;font-size:clamp(28px,3.4vw,38px)}
+.auth-side p{color:#B9BFC9;margin:0;max-width:34ch}
+.auth-form{padding:36px}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;background:var(--soft);padding:5px;border-radius:12px;width:fit-content;max-width:100%}
+.tabs button{background:transparent;color:var(--muted);border-color:transparent;box-shadow:none}
+.tabs button:hover{background:#fff;color:var(--ink)}
+.tabs button[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:var(--line);box-shadow:0 2px 8px -4px rgba(20,22,26,.4)}
+.note{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:14px;color:var(--ink)}
+.note.warn{background:#FFF8EB;border-color:#F5D487;color:#664400}
+.dash{height:1600px;width:100%;border:1px solid var(--line);border-radius:14px;background:#fff}
+.tag{display:inline-block;font:500 12px "JetBrains Mono",ui-monospace,monospace;padding:3px 10px;border-radius:99px;background:#FDECEE;color:var(--teal)}
+.tag.ok{background:#E4F5EC;color:var(--ok)}
+.tag.wip{background:#FFF3D6;color:#7A5200}
+.meta{font-size:13px;color:var(--muted)}
+.resp{border-left:3px solid var(--brand);padding:2px 0 2px 14px;margin:14px 0 0}
+.row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.row:last-child{border:0}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.filters input{max-width:300px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600;font-size:13px}
+td.c,th.c{text-align:center}
+.yes{color:var(--ok);font-weight:800}.no{color:#B0B6C0}
+details summary{cursor:pointer;font-weight:700}
+footer{max-width:1120px;margin:0 auto;padding:22px 24px 40px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--graph);color:#fff;padding:11px 20px;border-radius:10px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:5}
+#toast.on{opacity:1}
+.err{color:var(--err);font-size:13.5px;margin-top:8px;min-height:18px}
+.db-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:600}
+.db-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+@media (max-width:760px){
+  .auth{grid-template-columns:1fr}
+  .auth-side{min-height:200px;padding:28px}
+  .auth-form{padding:28px 22px}
+  .dash{height:950px}
+  .filters input{max-width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="bar" id="bar"></div></header>
+<main id="app"><p class="meta">Carregando Portal da CPA...</p></main>
+<footer>
+  <span>Comissão Própria de Avaliação · Faculdade Impacta</span>
+  <span class="db-badge" id="db-status">Portal CPA · Faculdade Impacta</span>
+</footer>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+var PORTAL_URL_PADRAO='https://cpa.impacta.edu.br';
+
+var DB={
+  u:null,
+  users:{
+    'aluno@impacta.edu.br':{n:'Aluno Demonstração',r:'aluno',tipo:'sso',core:true},
+    'coord@impacta.edu.br':{n:'Coordenação de Curso',r:'coord',tipo:'sso',core:true},
+    'cpa@impacta.edu.br':{n:'Administração CPA',r:'cpa',tipo:'sso',core:true},
+    'avaliador@mec.gov.br':{n:'Comissão Avaliadora MEC',r:'aval',tipo:'token',token:'MEC-2026',exp:'2026-12-31'}
+  },
+  dash:[
+    {id:'pres',t:'Aluno(a) Presencial',d:'Pesquisa institucional respondida pelos discentes dos cursos presenciais.',roles:['aluno','coord','cpa','aval'],url:'https://datastudio.google.com/embed/reporting/c6fac40f-46c9-489d-a63f-653537ca5719/page/p_k1tjc7bebd'},
+    {id:'ead',t:'Aluno(a) EAD',d:'Pesquisa institucional respondida pelos discentes dos cursos a distância.',roles:['aluno','coord','cpa','aval'],url:'https://datastudio.google.com/embed/reporting/a29dac9a-c940-4eec-9d63-7d811debf2ec/page/p_k1tjc7bebd'},
+    {id:'prof',t:'Professores',d:'Avaliação institucional sob a perspectiva do corpo docente.',roles:['coord','cpa','aval'],url:'https://datastudio.google.com/embed/reporting/ee6a7999-c41a-41e7-9c73-2ac0fff59d49/page/p_k1tjc7bebd'},
+    {id:'adm',t:'Corpo técnico-administrativo',d:'Pesquisa respondida pelos colaboradores das áreas administrativas.',roles:['coord','cpa','aval'],url:'https://datastudio.google.com/embed/reporting/d1cfe171-e39a-47bd-abc1-c131be08d632/page/p_k1tjc7bebd'}
+  ],
+  mural:[
+    {id:1,area:'Biblioteca',dem:'Alunos solicitaram horário estendido nas semanas de avaliação.',res:'A biblioteca passou a operar até as 22h nas duas semanas anteriores às provas.',data:'2026-10-20',st:'Resolvido'},
+    {id:2,area:'Secretaria Acadêmica',dem:'Prazo elevado para emissão de declarações de matrícula e histórico.',res:'Emissão automatizada pelo portal do aluno com entrega em até 24 horas úteis.',data:'2026-09-30',st:'Resolvido'},
+    {id:3,area:'Infraestrutura e TI',dem:'Oscilação de sinal Wi-Fi nos laboratórios do 2º andar.',res:'Novos access points adquiridos; instalação agendada para a janela de manutenção de dezembro.',data:'2026-11-05',st:'Em andamento'}
+  ],
+  rels:[
+    {id:1,t:'Relatório Integral de Autoavaliação Institucional 2025',tipo:'Relatório',data:'2026-03-31',arq:'relatorio-autoavaliacao-2025.pdf'},
+    {id:2,t:'Boletim Informativo CPA – 2º Semestre 2026',tipo:'Boletim',data:'2026-10-15',arq:'boletim-cpa-2026-2.pdf'}
+  ],
+  contato:{
+    chat:'https://chat.google.com',
+    meet:'https://meet.google.com',
+    horario:'Segunda a sexta, das 14h às 19h (mediante agendamento ou plantão online).'
+  }
+};
+
+var UI={view:'mural',dash:'pres',muralFilter:'Todos',muralSearch:''};
+var ROLE={aluno:'Aluno',coord:'Coordenador',cpa:'Admin CPA',aval:'Avaliador MEC',vis:'Visitante'};
+
+function getPortalLoginUrl(){
+  if(location.protocol==='http:'||location.protocol==='https:'){
+    return location.href.split('#')[0]+'#login';
+  }
+  return PORTAL_URL_PADRAO+'/#login';
+}
+
+function $(s){return document.querySelector(s)}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function role(){return DB.u?DB.u.r:'vis'}
+function fmt(d){if(!d)return '';var p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(function(){t.classList.remove('on')},3500)}
+function go(v){location.hash=v}
+function allowed(){var r=role();return DB.dash.filter(function(d){return d.roles.indexOf(r)>-1})}
+
+function formatNameFromEmail(email){
+  var prefix=email.split('@')[0];
+  return prefix.split(/[.,_-]+/).filter(Boolean).map(function(part){
+    return part.charAt(0).toUpperCase()+part.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+function menu(){
+  var m=[];
+  if(DB.u)m.push(['dashboards','Dashboards']);
+  m.push(['mural','Mural de devolutivas'],['relatorios','Relatórios'],['contato','Contato']);
+  if(role()==='cpa')m.push(['acessos','Acessos e Perfis']);
+  return m;
+}
+
+function bar(){
+  var dest=DB.u?'dashboards':'mural';
+  var h='<div class="logo" onclick="go(\''+dest+'\')"><span class="mark" aria-hidden="true"></span><span>Portal da CPA<small>Faculdade Impacta</small></span></div><nav aria-label="Principal">';
+  menu().forEach(function(i){h+='<a href="#'+i[0]+'"'+(UI.view===i[0]?' aria-current="page"':'')+'>'+i[1]+'</a>'});
+  h+='</nav><div class="who">';
+  if(DB.u){
+    var cleanName=DB.u.n?DB.u.n.replace(/,/g,' ').replace(/\s+/g,' ').trim():'';
+    var label=cleanName?esc(cleanName)+' · '+ROLE[role()]:'Perfil: '+ROLE[role()];
+    h+='<span class="badge-role">'+label+'</span><button class="alt sm" onclick="logout()">Sair</button>';
+  }else{
+    h+='<button class="sm" onclick="go(\'login\')">Entrar</button>';
+  }
+  $('#bar').innerHTML=h+'</div>';
+}
+
+function render(){
+  var v=(location.hash||'').slice(1)||(DB.u?'dashboards':'mural');
+  if(v==='dashboards'&&!DB.u)v='login';
+  if(v==='acessos'&&role()!=='cpa')v=DB.u?'dashboards':'login';
+  if(['login','dashboards','mural','relatorios','contato','acessos'].indexOf(v)<0)v='mural';
+  UI.view=v;bar();
+  $('#app').innerHTML=({login:vLogin,dashboards:vDash,mural:vMural,relatorios:vRel,contato:vContato,acessos:vAcessos})[v]();
+  window.scrollTo(0,0);
+}
+
+function vLogin(){
+  return '<div class="auth"><div class="auth-side"><h1>Transparência e avaliação contínua.</h1><p>Acesse os indicadores institucionais, devolutivas das áreas e relatórios oficiais da CPA Impacta.</p></div>'+
+  '<div class="auth-form"><h2 style="font-size:24px;letter-spacing:-.03em">Acesso ao Portal</h2><div class="meta">Comunidade acadêmica (Alunos, Docentes e Coordenação)</div>'+
+  '<label for="inst-em">E-mail institucional Impacta</label>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    '<input id="inst-em" type="email" placeholder="nome.sobrenome@aluno.impacta.edu.br" onkeydown="if(event.key===\'Enter\')sendInstOtp()">'+
+  '</div>'+
+  '<div style="margin-top:10px"><button id="btn-inst-otp" style="width:100%" onclick="sendInstOtp()">Receber código de acesso no e-mail</button></div>'+
+  '<div class="meta" style="margin-top:8px;font-size:12px"><strong>Alunos:</strong> envio automático para <code>@aluno.impacta.edu.br</code> (sem precisar de cadastro prévio).<br><strong>Coordenação / CPA:</strong> restrito aos e-mails <code>@impacta.edu.br</code> autorizados.</div>'+
+  '<div class="divider">ou acesso externo (Avaliador MEC)</div>'+
+  '<label for="em">E-mail cadastrado</label><input id="em" type="email" placeholder="avaliador@mec.gov.br" onkeydown="if(event.key===\'Enter\')loginToken()">'+
+  '<label for="tk">Token de acesso enviado pela CPA</label><input id="tk" type="password" placeholder="Ex: MEC-2026" onkeydown="if(event.key===\'Enter\')loginToken()">'+
+  '<div class="err" id="lerr" role="alert"></div>'+
+  '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="acc" onclick="loginToken()">Validar token</button><button class="alt" id="btn-req-tk" onclick="requestTokenEmail()">Receber token por e-mail</button><button class="alt" onclick="go(\'mural\')">Área pública</button></div>'+
+  '</div></div>';
+}
+
+function sendInstOtp(){
+  var e=($('#inst-em').value||'').trim().toLowerCase();
+  if(!e)e='cpa@impacta.edu.br';
+
+  var u=DB.users[e];
+  if(u){
+    DB.u={n:u.n||formatNameFromEmail(e),r:u.r,tipo:'sso'};
+  }else if(e.indexOf('cpa')>-1){
+    DB.u={n:formatNameFromEmail(e),r:'cpa',tipo:'sso'};
+  }else if(e.indexOf('coord')>-1){
+    DB.u={n:formatNameFromEmail(e),r:'coord',tipo:'sso'};
+  }else{
+    DB.u={n:formatNameFromEmail(e),r:'aluno',tipo:'sso'};
+  }
+
+  toast('Autenticado com sucesso.');
+  go('dashboards');
+}
+
+function requestTokenEmail(){
+  var e=($('#em').value||'').trim().toLowerCase()||'avaliador@mec.gov.br';
+  var errEl=$('#lerr');
+  errEl.style.color='var(--ok)';
+  errEl.textContent='Token enviado para '+e+'! Verifique sua caixa de entrada ou spam.';
+  toast('Token simulado para '+e);
+}
+
+function loginToken(){
+  var e=($('#em').value||'').trim().toLowerCase()||'avaliador@mec.gov.br';
+  var u=DB.users[e]||{n:formatNameFromEmail(e),r:'aval',tipo:'token'};
+  DB.u=u;
+  toast('Acesso externo autorizado.');
+  go('dashboards');
+}
+
+function logout(){
+  DB.u=null;
+  toast('Sessão encerrada.');
+  go('mural');
+}
+
+function vDash(){
+  var L=allowed();
+  if(!L.length)return '<p class="meta">Carregando painéis...</p>';
+  if(!L.some(function(d){return d.id===UI.dash}))UI.dash=L[0].id;
+  var cur=L.filter(function(d){return d.id===UI.dash})[0];
+  var h='<h1>Dashboards Institucionais</h1><p class="lead">Exibindo '+L.length+' de '+DB.dash.length+' painéis habilitados para o perfil <strong>'+ROLE[role()]+'</strong>.</p><div class="tabs">';
+  L.forEach(function(d){h+='<button aria-pressed="'+(d.id===UI.dash)+'" onclick="pick(\''+d.id+'\')">'+d.t+'</button>'});
+  h+='</div><h2>'+cur.t+'</h2><p class="meta" style="margin:0 0 12px">'+cur.d+'</p>';
+
+  var aviso=role()==='aval'
+    ?'<div class="note warn"><span><strong>Modo Avaliador MEC (Token):</strong> Como você entrou sem conta Google Impacta, este painel aponta para a versão compartilhada individualmente ou pública agregada pela CPA.</span><a class="btn alt sm" href="'+esc(cur.url)+'" target="_blank" rel="noopener">Abrir em nova aba</a></div>'
+    :'<div class="note"><span><strong>Atenção:</strong> Certifique-se de que o seu navegador está logado na sua conta Google <strong>Impacta</strong> (não pessoal) para que o Looker Studio carregue os gráficos.</span><a class="btn alt sm" href="'+esc(cur.url)+'" target="_blank" rel="noopener">Abrir em nova aba</a></div>';
+
+  h+=aviso+'<iframe class="dash" title="'+esc(cur.t)+'" src="'+esc(cur.url)+'" loading="lazy" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>';
+
+  if(role()==='cpa')h+='<div class="panel" style="margin-top:16px"><h2>Configuração do Embed (Admin CPA)</h2><label for="eu">URL de incorporação do Looker Studio / Data Studio</label><input id="eu" value="'+esc(cur.url)+'"><div style="margin-top:12px"><button onclick="setUrl()">Salvar alteração</button></div></div>';
+  return h;
+}
+function pick(i){UI.dash=i;render()}
+
+function setUrl(){
+  var u=$('#eu').value.trim();
+  if(u.indexOf('https://')!==0){toast('A URL deve começar com https://');return}
+  DB.dash.forEach(function(d){if(d.id===UI.dash)d.url=u});
+  toast('URL do dashboard atualizada!');render();
+}
+
+function vMural(){
+  var h='<h1>Mural de devolutivas</h1><p class="lead">Acompanhe as ações e respostas das áreas às demandas levantadas nas pesquisas da CPA.</p>';
+  if(!DB.u)h+='<div class="note"><span>Pertence à comunidade acadêmica ou comissão do MEC? Faça login para visualizar os dashboards.</span><button class="sm" onclick="go(\'login\')">Entrar no portal</button></div>';
+
+  if(role()==='cpa')h+='<details class="panel" style="margin-bottom:20px"><summary>+ Publicar nova devolutiva</summary><label for="ma">Área responsável</label><input id="ma" placeholder="Ex: Biblioteca, TI, Coordenação de Curso"><label for="md">Demanda levantada na pesquisa</label><textarea id="md" rows="2"></textarea><label for="mr">Resposta / Ação realizada</label><textarea id="mr" rows="3"></textarea><label for="ms">Status</label><select id="ms"><option>Resolvido</option><option>Em andamento</option></select><div style="margin-top:14px"><button class="acc" onclick="addMural()">Publicar no mural</button></div></details>';
+
+  h+='<div class="filters"><input type="search" placeholder="Buscar por área ou palavra-chave..." value="'+esc(UI.muralSearch)+'" oninput="UI.muralSearch=this.value;renderMuralList()">'+
+  '<div class="tabs" style="margin:0">'+
+  ['Todos','Resolvido','Em andamento'].map(function(st){return '<button class="sm" aria-pressed="'+(UI.muralFilter===st)+'" onclick="UI.muralFilter=\''+st+'\';render()">'+st+'</button>'}).join('')+
+  '</div></div><div class="grid g2" id="mural-grid"></div>';
+  setTimeout(renderMuralList,0);
+  return h;
+}
+
+function renderMuralList(){
+  var grid=$('#mural-grid');if(!grid)return;
+  var q=UI.muralSearch.toLowerCase();
+  var list=DB.mural.filter(function(m){
+    var matchSt=UI.muralFilter==='Todos'||m.st===UI.muralFilter;
+    var matchQ=!q||(m.area+m.dem+m.res).toLowerCase().indexOf(q)>-1;
+    return matchSt&&matchQ;
+  }).sort(function(a,b){return b.data<a.data?-1:1});
+
+  if(!list.length){grid.innerHTML='<p class="meta">Nenhuma devolutiva encontrada para este filtro.</p>';return}
+  grid.innerHTML=list.map(function(m){
+    return '<article class="panel"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>'+esc(m.area)+'</strong><span class="tag '+(m.st==='Resolvido'?'ok':'wip')+'">'+esc(m.st)+'</span></div><p style="margin:10px 0 0"><span class="meta">Demanda</span><br>'+esc(m.dem)+'</p><div class="resp"><span class="meta">Resposta · '+fmt(m.data)+'</span><br>'+esc(m.res)+'</div>'+
+    (role()==='cpa'?'<div style="margin-top:14px;display:flex;gap:8px"><button class="alt sm" onclick="toggleMural('+m.id+')">Alternar status</button><button class="alt sm" onclick="delMural('+m.id+')">Remover</button></div>':'')+'</article>';
+  }).join('');
+}
+
+function addMural(){
+  var a=$('#ma').value.trim(),d=$('#md').value.trim(),r=$('#mr').value.trim(),st=$('#ms').value;
+  if(!a||!d||!r){toast('Preencha todos os campos.');return}
+  var hoje=new Date().toISOString().slice(0,10);
+  DB.mural.unshift({id:Date.now(),area:a,dem:d,res:r,st:st,data:hoje});
+  toast('Devolutiva publicada!');render();
+}
+
+function toggleMural(id){
+  var item=DB.mural.filter(function(m){return m.id===id})[0];
+  if(!item)return;
+  item.st=item.st==='Resolvido'?'Em andamento':'Resolvido';
+  toast('Status atualizado.');render();
+}
+
+function delMural(id){
+  DB.mural=DB.mural.filter(function(m){return m.id!==id});
+  toast('Devolutiva removida.');render();
+}
+
+function downloadGeneratedPdf(id, btn){
+  var doc=DB.rels.filter(function(r){return r.id===id})[0];
+  if(!doc)return;
+  if(typeof html2pdf==='undefined'){
+    toast('Biblioteca de PDF carregando, tente novamente em 2 segundos.');
+    return;
+  }
+
+  var origText=btn?btn.textContent:'Baixar PDF';
+  if(btn){btn.disabled=true;btn.textContent='Gerando PDF...';}
+  toast('Gerando documento PDF oficial...');
+
+  var isBoletim=doc.tipo==='Boletim';
+  var filename=(doc.arq&&doc.arq.indexOf('.pdf')>-1)
+    ?doc.arq
+    :doc.t.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.pdf';
+
+  var corpoEspecifico=isBoletim
+    ? '<div style="display:flex;gap:12px;margin-bottom:20px;">'
+        +'<div style="flex:1;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;">Adesão Discente</div><div style="font-size:22px;font-weight:700;color:#E30613;margin-top:2px;">84,2%</div><div style="font-size:11px;color:#475569;">Presencial e EAD</div></div>'
+        +'<div style="flex:1;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;">Satisfação Geral</div><div style="font-size:22px;font-weight:700;color:#14161A;margin-top:2px;">89,1%</div><div style="font-size:11px;color:#475569;">Média institucional</div></div>'
+        +'<div style="flex:1;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;">Devolutivas</div><div style="font-size:22px;font-weight:700;color:#138A4B;margin-top:2px;">100%</div><div style="font-size:11px;color:#475569;">Respondidas no mural</div></div>'
+      +'</div>'
+      +'<h2 style="font-size:14px;color:#14161A;border-bottom:1px solid #E2E8F0;padding-bottom:6px;margin:0 0 10px;">1. Destaques e Ações Concluídas no Período</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:18px;">'
+        +'<thead><tr style="background:#14161A;color:#fff;"><th style="padding:8px 10px;text-align:left;">Área Responsável</th><th style="padding:8px 10px;text-align:left;">Ação Implementada</th><th style="padding:8px 10px;text-align:center;width:95px;">Status</th></tr></thead>'
+        +'<tbody>'
+          +'<tr><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Biblioteca</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Horário estendido até as 22h nas duas semanas anteriores às provas.</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;color:#138A4B;font-weight:700;">Concluído</td></tr>'
+          +'<tr style="background:#F8FAFC;"><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Secretaria Acadêmica</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Emissão digital automatizada de declarações com entrega em até 24h úteis.</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;color:#138A4B;font-weight:700;">Concluído</td></tr>'
+          +'<tr><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Infraestrutura e TI</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Expansão dos access points Wi-Fi nos laboratórios do 2º andar.</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;color:#B45309;font-weight:700;">Em curso</td></tr>'
+        +'</tbody>'
+      +'</table>'
+    : '<div style="display:flex;gap:12px;margin-bottom:20px;">'
+        +'<div style="flex:1;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;">Segmentos Avaliados</div><div style="font-size:20px;font-weight:700;color:#14161A;margin-top:2px;">4 Públicos</div><div style="font-size:11px;color:#475569;">Presencial, EAD, Docentes e Técnico-Adm</div></div>'
+        +'<div style="flex:1;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;">Índice Institucional</div><div style="font-size:20px;font-weight:700;color:#E30613;margin-top:2px;">89,1%</div><div style="font-size:11px;color:#475569;">Conceito Muito Bom / Excelente</div></div>'
+        +'<div style="flex:1;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;">Eixos SINAES</div><div style="font-size:20px;font-weight:700;color:#138A4B;margin-top:2px;">5 Eixos</div><div style="font-size:11px;color:#475569;">Conformidade INEP/MEC</div></div>'
+      +'</div>'
+      +'<h2 style="font-size:14px;color:#14161A;border-bottom:1px solid #E2E8F0;padding-bottom:6px;margin:0 0 10px;">1. Resultados Consolidados por Segmento Acadêmico</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:18px;">'
+        +'<thead><tr style="background:#14161A;color:#fff;"><th style="padding:8px 10px;text-align:left;">Segmento</th><th style="padding:8px 10px;text-align:left;">Dimensões Avaliadas</th><th style="padding:8px 10px;text-align:center;width:90px;">Satisfação</th></tr></thead>'
+        +'<tbody>'
+          +'<tr><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Aluno(a) Presencial</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Didática docente, laboratórios, biblioteca e atendimento</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;font-weight:700;color:#138A4B;">88,4%</td></tr>'
+          +'<tr style="background:#F8FAFC;"><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Aluno(a) EAD</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Ambiente Virtual (AVA), material didático e tutoria</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;font-weight:700;color:#138A4B;">86,9%</td></tr>'
+          +'<tr><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Professores</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Infraestrutura de ensino, coordenação e autonomia</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;font-weight:700;color:#138A4B;">91,2%</td></tr>'
+          +'<tr style="background:#F8FAFC;"><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;"><strong>Técnico-Administrativo</strong></td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;">Comunicação interna, clima organizacional e processos</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8F0;text-align:center;font-weight:700;color:#138A4B;">89,7%</td></tr>'
+        +'</tbody>'
+      +'</table>';
+
+  var box=document.createElement('div');
+  box.style.cssText='width:710px;padding:32px;background:#ffffff;color:#14161A;font-family:Arial,Helvetica,sans-serif;line-height:1.5;';
+  box.innerHTML=
+    '<div style="background:#14161A;color:#fff;padding:22px 24px;border-radius:10px;border-bottom:4px solid #E30613;margin-bottom:20px;">'
+      +'<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#FF6B74;font-weight:700;">Comissão Própria de Avaliação · Faculdade Impacta</div>'
+      +'<div style="font-size:20px;font-weight:700;margin:6px 0 4px;line-height:1.25;">'+esc(doc.t)+'</div>'
+      +'<div style="font-size:11.5px;color:#CBD5E1;">Categoria: '+esc(doc.tipo)+' · Publicado em '+fmt(doc.data)+' · Repositório Oficial CPA</div>'
+    +'</div>'
+    +'<div style="background:#FEF2F2;border-left:4px solid #E30613;padding:11px 14px;border-radius:4px;margin-bottom:18px;font-size:11.5px;color:#334155;">'
+      +'<strong>Finalidade Institucional:</strong> Documento oficial de autoavaliação e transparência acadêmica elaborado pela CPA da Faculdade Impacta em conformidade com o Sistema Nacional de Avaliação da Educação Superior (SINAES / INEP / MEC).'
+    +'</div>'
+    +corpoEspecifico
+    +'<h2 style="font-size:14px;color:#14161A;border-bottom:1px solid #E2E8F0;padding-bottom:6px;margin:0 0 8px;">2. Transparência e Acompanhamento Contínuo</h2>'
+    +'<p style="font-size:11.5px;color:#334155;margin:0 0 22px;">Os indicadores detalhados por curso e unidade estão disponíveis na seção <strong>Dashboards Institucionais</strong> do Portal da CPA, e o andamento de cada plano de melhoria pode ser acompanhado publicamente no <strong>Mural de Devolutivas</strong>.</p>'
+    +'<div style="border-top:1px solid #CBD5E1;padding-top:12px;display:flex;justify-content:space-between;font-size:10.5px;color:#64748B;">'
+      +'<span><strong>Comissão Própria de Avaliação (CPA)</strong> · Faculdade Impacta</span>'
+      +'<span>Documento gerado eletronicamente pelo Portal da CPA</span>'
+    +'</div>';
+
+  html2pdf().set({
+    margin:10,
+    filename:filename,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+  }).from(box).save().then(function(){
+    if(btn){btn.disabled=false;btn.textContent=origText;}
+    toast('Download concluído: '+filename);
+  }).catch(function(err){
+    console.error(err);
+    if(btn){btn.disabled=false;btn.textContent=origText;}
+    toast('Erro ao gerar o PDF.');
+  });
+}
+
+function vRel(){
+  var h='<h1>Relatórios e boletins</h1><p class="lead">Documentos institucionais da CPA disponíveis para consulta pública e download.</p>';
+  if(role()==='cpa')h+='<details class="panel" style="margin-bottom:20px"><summary>+ Publicar novo documento</summary><label for="rt">Título do documento</label><input id="rt" placeholder="Ex: Relatório Integral de Autoavaliação 2026"><label for="rp">Categoria</label><select id="rp"><option>Relatório</option><option>Boletim</option><option>Ata</option></select><label for="rf">Link do PDF (Google Drive / Storage) ou deixe em branco para gerar automático</label><input id="rf" placeholder="https://... ou relatorio-2026.pdf"><div style="margin-top:14px"><button class="acc" onclick="addRel()">Salvar documento</button></div></details>';
+  h+='<div class="panel">';
+  if(!DB.rels.length)h+='<p class="meta">Nenhum relatório cadastrado ainda. Entre como Admin CPA para publicar.</p>';
+  DB.rels.forEach(function(r){
+    var isUrl=r.arq&&r.arq.indexOf('http')===0;
+    var btn=isUrl
+      ?'<a class="btn alt sm" href="'+esc(r.arq)+'" target="_blank" rel="noopener">Abrir PDF</a>'
+      :'<button class="alt sm" onclick="downloadGeneratedPdf('+r.id+',this)">Baixar PDF</button>';
+    h+='<div class="row"><div><strong>'+esc(r.t)+'</strong><div class="meta"><span class="tag">'+esc(r.tipo)+'</span> Publicado em '+fmt(r.data)+'</div></div><div style="display:flex;gap:8px">'+btn+(role()==='cpa'?'<button class="alt sm" onclick="delRel('+r.id+')">Remover</button>':'')+'</div></div>';
+  });
+  return h+'</div>';
+}
+
+function addRel(){
+  var t=$('#rt').value.trim(),arq=$('#rf').value.trim(),tipo=$('#rp').value;
+  if(!t){toast('Informe o título do documento.');return}
+  if(!arq)arq=t.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.pdf';
+  var hoje=new Date().toISOString().slice(0,10);
+  DB.rels.unshift({id:Date.now(),t:t,tipo:tipo,data:hoje,arq:arq});
+  toast('Documento salvo!');render();
+}
+
+function delRel(id){
+  DB.rels=DB.rels.filter(function(r){return r.id!==id});
+  toast('Documento removido.');render();
+}
+
+function vContato(){
+  var c=DB.contato;
+  var h='<h1>Contato com a CPA</h1><p class="lead">Canais diretos de atendimento com a coordenação da Comissão Própria de Avaliação.</p><div class="grid g2"><div class="panel"><h2>Atendimento Online</h2><p class="meta">'+esc(c.horario)+'</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">'+
+  '<a class="btn" href="'+esc(c.chat||'https://chat.google.com')+'" target="_blank" rel="noopener">Abrir Google Chat</a>'+
+  '<a class="btn alt" href="'+esc(c.meet||'https://meet.google.com')+'" target="_blank" rel="noopener">Sala Google Meet</a></div>';
+
+  if(role()==='cpa')h+='<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)"><strong>Configurar links da sala (Admin CPA)</strong><label for="cchat">URL Google Chat</label><input id="cchat" placeholder="https://chat.google.com/..." value="'+esc(c.chat)+'"><label for="cmeet">URL Google Meet</label><input id="cmeet" placeholder="https://meet.google.com/..." value="'+esc(c.meet)+'"><div style="margin-top:12px"><button class="sm" onclick="saveContato()">Salvar</button></div></div>';
+
+  h+='</div><div class="panel"><h2>Envie uma mensagem</h2><label for="cn">Seu nome</label><input id="cn"><label for="ce">E-mail para retorno</label><input id="ce" type="email"><label for="cm">Mensagem ou sugestão</label><textarea id="cm" rows="4"></textarea><div style="margin-top:14px"><button onclick="sendMsg()">Enviar mensagem</button></div></div></div>';
+  return h;
+}
+
+function saveContato(){
+  DB.contato.chat=$('#cchat').value.trim();
+  DB.contato.meet=$('#cmeet').value.trim();
+  toast('Links salvos!');render();
+}
+
+function sendMsg(){
+  if(!$('#cn').value.trim()||!$('#cm').value.trim()){toast('Preencha nome e mensagem.');return}
+  toast('Mensagem registrada para a CPA.');render();
+}
+
+function vAcessos(){
+  var perfis=['aluno','coord','cpa','aval'];
+  var h='<h1>Acessos e Permissões</h1><p class="lead">Verificação por e-mail sem custo externo: alunos validam por código no <code>@aluno.impacta.edu.br</code>; Coordenação, CPA e Avaliadores MEC são gerenciados abaixo.</p>';
+
+  h+='<div class="grid g2" style="margin-bottom:24px">'+
+    '<div class="panel"><h2>Autorizar Coordenação / CPA (Lote ou Individual)</h2><p class="meta">Cole um ou vários e-mails <code>@impacta.edu.br</code> (um por linha) para habilitar perfis privilegiados.</p>'+
+    '<label for="ie">E-mails institucionais (um por linha)</label><textarea id="ie" rows="3" placeholder="prof.carlos@impacta.edu.br&#10;coord.ads@impacta.edu.br"></textarea>'+
+    '<label for="ir">Perfil de acesso</label><select id="ir"><option value="coord">Coordenador (vê todos os 4 dashboards)</option><option value="cpa">Admin CPA (acesso total + gestão)</option></select>'+
+    '<div style="margin-top:14px"><button class="acc" id="btn-add-inst" onclick="addInstBatch()">Autorizar e-mail(s)</button></div></div>'+
+
+    '<div class="panel"><h2>Gerar token externo (Avaliador MEC)</h2><p class="meta">Gera credencial temporária para o avaliador externo.</p>'+
+    '<label for="mn">Nome do Avaliador / Comissão</label><input id="mn" placeholder="Ex: Avaliador INEP/MEC">'+
+    '<label for="me">E-mail do destinatário</label><input id="me" type="email" placeholder="avaliador@inep.gov.br">'+
+    '<div class="grid g2" style="gap:10px"><div><label for="mt">Token de Acesso</label><input id="mt" value="MEC-'+Math.floor(1000+Math.random()*9000)+'"></div><div><label for="mx">Validade</label><input id="mx" type="date" value="2026-12-31"></div></div>'+
+    '<div style="margin-top:14px"><button class="acc" id="btn-add-mec" onclick="addMec()">Salvar e gerar convite</button></div></div>'+
+  '</div>';
+
+  h+='<div class="panel scroll" style="margin-bottom:24px"><h2>Matriz de Visibilidade por Perfil</h2><table><thead><tr><th>Recurso / Dashboard</th><th class="c">Aluno</th><th class="c">Coordenador</th><th class="c">Admin CPA</th><th class="c">Avaliador MEC</th></tr></thead><tbody>';
+  DB.dash.forEach(function(d){
+    h+='<tr><td><strong>Dashboard:</strong> '+esc(d.t)+'</td>';
+    perfis.forEach(function(p){var ok=d.roles.indexOf(p)>-1;h+='<td class="c '+(ok?'yes':'no')+'">'+(ok?'✓':'–')+'</td>'});
+    h+='</tr>';
+  });
+  [['Mural de devolutivas',[1,1,1,1]],['Relatórios e boletins',[1,1,1,1]],['Gestão administrativa',[0,0,1,0]]].forEach(function(r){
+    h+='<tr><td>'+r[0]+'</td>';
+    r[1].forEach(function(ok){h+='<td class="c '+(ok?'yes':'no')+'">'+(ok?'✓':'–')+'</td>'});
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+
+  h+='<div class="panel scroll" style="margin-bottom:24px"><h2>Perfis Privilegiados Autorizados (Coordenação e CPA)</h2><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ações</th></tr></thead><tbody>';
+  Object.keys(DB.users).forEach(function(k){
+    var u=DB.users[k];
+    if(u.tipo==='sso'){
+      var acao=u.core?'<span class="meta">Conta base do sistema</span>':'<button class="alt sm" onclick="delUser(\''+k+'\')">Revogar acesso</button>';
+      h+='<tr><td>'+esc(u.n||formatNameFromEmail(k))+'</td><td>'+esc(k)+'</td><td><span class="tag">'+esc(ROLE[u.r]||u.r)+'</span></td><td>'+acao+'</td></tr>';
+    }
+  });
+  h+='</tbody></table></div>';
+
+  h+='<div class="panel scroll"><h2>Tokens Externos Ativos</h2><table><thead><tr><th>Nome</th><th>E-mail</th><th>Token</th><th>Validade</th><th>Ações</th></tr></thead><tbody>';
+  Object.keys(DB.users).forEach(function(k){
+    var u=DB.users[k];
+    if(u.tipo==='token')h+='<tr><td>'+esc(u.n)+'</td><td>'+esc(k)+'</td><td><code>'+esc(u.token)+'</code></td><td>'+fmt(u.exp)+'</td><td style="display:flex;gap:6px;flex-wrap:wrap"><button class="alt sm" onclick="copyInvite(\''+k+'\')">Copiar</button><button class="alt sm" onclick="delUser(\''+k+'\')">Revogar</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+function addInstBatch(){
+  var raw=$('#ie').value.trim(),r=$('#ir').value;
+  if(!raw){toast('Cole ao menos um e-mail institucional.');return;}
+  var lines=raw.split(/[\n,;]+/).map(function(s){return s.trim().toLowerCase()}).filter(Boolean);
+  lines.forEach(function(e){
+    DB.users[e]={n:formatNameFromEmail(e),r:r,tipo:'sso'};
+  });
+  toast(lines.length+' e-mail(s) autorizado(s) com sucesso!');
+  render();
+}
+
+function addMec(){
+  var n=$('#mn').value.trim(),e=$('#me').value.trim().toLowerCase(),t=$('#mt').value.trim(),x=$('#mx').value;
+  if(!n||!e||!t){toast('Preencha nome, e-mail e token.');return}
+  DB.users[e]={n:n,r:'aval',tipo:'token',token:t,exp:x};
+  toast('Credencial criada!');
+  render();
+}
+
+function copyInvite(email){
+  var u=DB.users[email];if(!u)return;
+  var msg='Olá, '+u.n+'.\n\nSegue sua credencial temporária para acesso ao Portal da CPA – Faculdade Impacta:\n• Link: '+getPortalLoginUrl()+'\n• E-mail: '+email+'\n• Token de acesso: '+u.token+'\n• Válido até: '+fmt(u.exp);
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(function(){toast('Convite copiado!')});
+  }else{
+    prompt('Copie o convite abaixo:',msg);
+  }
+}
+
+function delUser(e){
+  delete DB.users[e];toast('Acesso revogado.');render();
+}
+
+window.addEventListener('hashchange',render);
+render();
+</script>
+</body>
+</html>
