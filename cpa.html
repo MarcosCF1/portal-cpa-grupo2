@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Portal da CPA – Faculdade Impacta</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{--bg:#fff;--soft:#F5F6F8;--ink:#14161A;--muted:#5E6673;--line:#E3E6EB;--brand:#E30613;--brand-d:#B80510;--graph:#14161A;--teal:#C40510;--ok:#138A4B;--err:#C40510;--accent:#E30613;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -85,6 +87,7 @@ footer{max-width:1120px;margin:0 auto;padding:22px 24px 40px;border-top:1px soli
 .err{color:var(--err);font-size:13.5px;margin-top:8px;min-height:18px}
 .db-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:600}
 .db-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.otp-box{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px}
 @media (max-width:760px){
   .auth{grid-template-columns:1fr}
   .auth-side{min-height:200px;padding:28px}
@@ -97,15 +100,31 @@ footer{max-width:1120px;margin:0 auto;padding:22px 24px 40px;border-top:1px soli
 </head>
 <body>
 <header><div class="bar" id="bar"></div></header>
-<main id="app"><p class="meta">Carregando Portal da CPA...</p></main>
+<main id="app"><p class="meta">Conectando ao banco de dados da CPA...</p></main>
 <footer>
   <span>Comissão Própria de Avaliação · Faculdade Impacta</span>
-  <span class="db-badge" id="db-status">Portal CPA · Faculdade Impacta</span>
+  <span class="db-badge" id="db-status">Supabase & EmailJS conectados</span>
 </footer>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
+// 1. Conexão Supabase
+var SUPABASE_URL='https://prblkovrpjefkpxstlzg.supabase.co';
+var SUPABASE_KEY='sb_publishable_wT7ZzgeVMzeYlszwxPpS4Q_OsWR5Qpn';
+var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// 2. Conexão EmailJS (Disparo gratuito de códigos OTP e convites MEC)
+var EMAILJS_SERVICE_ID='service_fkpv5bz';
+var EMAILJS_TEMPLATE_ID='template_o2yyo4c';
+var EMAILJS_PUBLIC_KEY='MaIAgSgfFtupvPpJP';
+emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});
+
 var PORTAL_URL_PADRAO='https://cpa.impacta.edu.br';
+var SESSION_KEY='cpa_impacta_session_v1';
+var LOGS_BACKUP_KEY='cpa_logs_backup_v1';
+
+// Estado da verificação por código OTP (6 dígitos) no e-mail institucional
+var OTP={email:'',code:'',expires:0,role:'aluno',nome:'',sent:false};
 
 var DB={
   u:null,
@@ -130,12 +149,20 @@ var DB={
     {id:1,t:'Relatório Integral de Autoavaliação Institucional 2025',tipo:'Relatório',data:'2026-03-31',arq:'relatorio-autoavaliacao-2025.pdf'},
     {id:2,t:'Boletim Informativo CPA – 2º Semestre 2026',tipo:'Boletim',data:'2026-10-15',arq:'boletim-cpa-2026-2.pdf'}
   ],
+  logs:[],
   contato:{
     chat:'https://chat.google.com',
     meet:'https://meet.google.com',
     horario:'Segunda a sexta, das 14h às 19h (mediante agendamento ou plantão online).'
   }
 };
+
+try{
+  var savedUser=localStorage.getItem(SESSION_KEY);
+  if(savedUser)DB.u=JSON.parse(savedUser);
+  var savedLogs=localStorage.getItem(LOGS_BACKUP_KEY);
+  if(savedLogs)DB.logs=JSON.parse(savedLogs);
+}catch(e){}
 
 var UI={view:'mural',dash:'pres',muralFilter:'Todos',muralSearch:''};
 var ROLE={aluno:'Aluno',coord:'Coordenador',cpa:'Admin CPA',aval:'Avaliador MEC',vis:'Visitante'};
@@ -147,10 +174,140 @@ function getPortalLoginUrl(){
   return PORTAL_URL_PADRAO+'/#login';
 }
 
+function saveSession(){
+  try{
+    if(DB.u)localStorage.setItem(SESSION_KEY,JSON.stringify(DB.u));
+    else localStorage.removeItem(SESSION_KEY);
+  }catch(e){}
+}
+
+function saveLogsBackup(){
+  try{
+    localStorage.setItem(LOGS_BACKUP_KEY,JSON.stringify(DB.logs.slice(0,100)));
+  }catch(e){}
+}
+
+async function registrarAcesso(email, userObj, metodo){
+  var localEntry={
+    email:email,
+    nome:userObj.n||formatNameFromEmail(email),
+    role:userObj.r,
+    metodo:metodo,
+    acessado_em:new Date().toISOString()
+  };
+
+  // Mantém histórico local persistente mesmo após logout
+  DB.logs.unshift(localEntry);
+  saveLogsBackup();
+
+  try{
+    var payload={
+      email:localEntry.email,
+      nome:localEntry.nome,
+      role:localEntry.role,
+      metodo:localEntry.metodo
+    };
+    var {data,error}=await sb.from('logs_acesso').insert([payload]).select();
+    if(error){
+      console.error('Erro Supabase logs_acesso:',error.message);
+      toast('Aviso: log salvo localmente, mas o Supabase bloqueou (rode o SQL da tabela logs_acesso).');
+      return;
+    }
+    if(data&&data[0]){
+      DB.logs[0]=data[0];
+      saveLogsBackup();
+      if(UI.view==='acessos')render();
+    }
+  }catch(e){
+    console.error('Erro de rede ao registrar log:',e);
+  }
+}
+
+async function fetchLogsFromDb(silent){
+  var {data,error}=await sb.from('logs_acesso').select('*').order('acessado_em',{ascending:false}).limit(100);
+  if(error){
+    if(!silent)toast('Erro ao ler histórico do banco: '+error.message);
+    return;
+  }
+  if(data&&data.length){
+    DB.logs=data;
+    saveLogsBackup();
+  }
+}
+
+async function refreshLogs(){
+  toast('Atualizando histórico...');
+  await fetchLogsFromDb(false);
+  toast('Histórico sincronizado!');
+  render();
+}
+
+async function syncFromSupabase(){
+  try{
+    var [resDash,resMural,resRels,resUsers,resCfg,resLogs]=await Promise.all([
+      sb.from('dashboards').select('*'),
+      sb.from('mural').select('*').order('data',{ascending:false}),
+      sb.from('relatorios').select('*').order('data',{ascending:false}),
+      sb.from('usuarios_cpa').select('*'),
+      sb.from('configuracoes').select('*').eq('id',1).single(),
+      sb.from('logs_acesso').select('*').order('acessado_em',{ascending:false}).limit(100)
+    ]);
+
+    if(resDash.data&&resDash.data.length){
+      var order=['pres','ead','prof','adm'];
+      DB.dash=resDash.data.map(function(d){
+        return {id:d.id,t:d.titulo,d:d.descricao,roles:d.roles,url:d.url};
+      }).sort(function(a,b){return order.indexOf(a.id)-order.indexOf(b.id)});
+    }
+
+    if(resMural.data&&resMural.data.length){
+      DB.mural=resMural.data.map(function(m){
+        return {id:m.id,area:m.area,dem:m.demanda,res:m.resposta,st:m.status,data:m.data};
+      });
+    }
+
+    if(resRels.data&&resRels.data.length){
+      DB.rels=resRels.data.map(function(r){
+        return {id:r.id,t:r.titulo,tipo:r.tipo,data:r.data,arq:r.arquivo_url};
+      });
+    }
+
+    if(resUsers.data&&resUsers.data.length){
+      resUsers.data.forEach(function(u){
+        var prev=DB.users[u.email]||{};
+        DB.users[u.email]={n:u.nome||prev.n||'',r:u.role,tipo:u.tipo,token:u.token,exp:u.expira_em,core:prev.core||false};
+      });
+    }
+
+    if(resLogs.data&&resLogs.data.length){
+      DB.logs=resLogs.data;
+      saveLogsBackup();
+    }
+
+    if(resCfg.data){
+      DB.contato={
+        chat:resCfg.data.chat_url||'https://chat.google.com',
+        meet:resCfg.data.meet_url||'https://meet.google.com',
+        horario:resCfg.data.horario||DB.contato.horario
+      };
+    }
+  }catch(err){
+    console.error(err);
+    var st=$('#db-status');
+    if(st){st.textContent='Modo offline (erro ao sincronizar)';st.style.color='var(--err)';}
+  }
+  render();
+}
+
 function $(s){return document.querySelector(s)}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function role(){return DB.u?DB.u.r:'vis'}
 function fmt(d){if(!d)return '';var p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
+function fmtDateTime(iso){
+  if(!iso)return '';
+  var dt=new Date(iso);
+  return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
 function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(function(){t.classList.remove('on')},3500)}
 function go(v){location.hash=v}
 function allowed(){var r=role();return DB.dash.filter(function(d){return d.roles.indexOf(r)>-1})}
@@ -162,6 +319,14 @@ function formatNameFromEmail(email){
   }).join(' ');
 }
 
+function isImpactaDomain(e){
+  return /^[^@\s]+@([a-z0-9-]+\.)*impacta\.edu(\.br)?$/i.test(e);
+}
+
+function isStudentDomain(e){
+  return /^[a-z0-9_-]+(\.[a-z0-9_-]+)+@aluno\.impacta\.edu(\.br)?$/i.test(e);
+}
+
 function menu(){
   var m=[];
   if(DB.u)m.push(['dashboards','Dashboards']);
@@ -171,8 +336,7 @@ function menu(){
 }
 
 function bar(){
-  var dest=DB.u?'dashboards':'mural';
-  var h='<div class="logo" onclick="go(\''+dest+'\')"><span class="mark" aria-hidden="true"></span><span>Portal da CPA<small>Faculdade Impacta</small></span></div><nav aria-label="Principal">';
+  var h='<div class="logo" onclick="go(DB.u?\'dashboards\':\'mural\')"><span class="mark" aria-hidden="true"></span><span>Portal da CPA<small>Faculdade Impacta</small></span></div><nav aria-label="Principal">';
   menu().forEach(function(i){h+='<a href="#'+i[0]+'"'+(UI.view===i[0]?' aria-current="page"':'')+'>'+i[1]+'</a>'});
   h+='</nav><div class="who">';
   if(DB.u){
@@ -192,17 +356,40 @@ function render(){
   if(['login','dashboards','mural','relatorios','contato','acessos'].indexOf(v)<0)v='mural';
   UI.view=v;bar();
   $('#app').innerHTML=({login:vLogin,dashboards:vDash,mural:vMural,relatorios:vRel,contato:vContato,acessos:vAcessos})[v]();
+  if(v==='acessos'){
+    fetchLogsFromDb(true).then(function(){
+      var tb=$('#logs-tbody');
+      if(tb)tb.innerHTML=renderLogsRows();
+    });
+  }
   window.scrollTo(0,0);
 }
 
 function vLogin(){
+  var otpHtml='';
+  if(OTP.sent){
+    otpHtml='<div class="otp-box">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--ok)">Código de 6 dígitos enviado para '+esc(OTP.email)+'</div>'+
+      '<label for="otp-code" style="margin-top:8px">Digite o código recebido no seu e-mail Impacta</label>'+
+      '<div style="display:flex;gap:8px;margin-top:4px">'+
+        '<input id="otp-code" maxlength="6" placeholder="000000" style="font-family:\'JetBrains Mono\',monospace;letter-spacing:.2em;font-size:16px" onkeydown="if(event.key===\'Enter\')verifyInstOtp()">'+
+        '<button onclick="verifyInstOtp()">Confirmar</button>'+
+      '</div>'+
+      '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">'+
+        '<span class="meta" style="font-size:12px">Válido por 10 minutos.</span>'+
+        '<button class="alt sm" onclick="resetOtp()">Trocar e-mail</button>'+
+      '</div>'+
+    '</div>';
+  }
+
   return '<div class="auth"><div class="auth-side"><h1>Transparência e avaliação contínua.</h1><p>Acesse os indicadores institucionais, devolutivas das áreas e relatórios oficiais da CPA Impacta.</p></div>'+
   '<div class="auth-form"><h2 style="font-size:24px;letter-spacing:-.03em">Acesso ao Portal</h2><div class="meta">Comunidade acadêmica (Alunos, Docentes e Coordenação)</div>'+
   '<label for="inst-em">E-mail institucional Impacta</label>'+
   '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-    '<input id="inst-em" type="email" placeholder="nome.sobrenome@aluno.impacta.edu.br" onkeydown="if(event.key===\'Enter\')sendInstOtp()">'+
+    '<input id="inst-em" type="email" placeholder="nome.sobrenome@aluno.impacta.edu.br" value="'+esc(OTP.email)+'" '+(OTP.sent?'disabled':'')+' onkeydown="if(event.key===\'Enter\')sendInstOtp()">'+
   '</div>'+
-  '<div style="margin-top:10px"><button id="btn-inst-otp" style="width:100%" onclick="sendInstOtp()">Receber código de acesso no e-mail</button></div>'+
+  (!OTP.sent?'<div style="margin-top:10px"><button id="btn-inst-otp" style="width:100%" onclick="sendInstOtp()">Receber código de acesso no e-mail</button></div>':'')+
+  otpHtml+
   '<div class="meta" style="margin-top:8px;font-size:12px"><strong>Alunos:</strong> envio automático para <code>@aluno.impacta.edu.br</code> (sem precisar de cadastro prévio).<br><strong>Coordenação / CPA:</strong> restrito aos e-mails <code>@impacta.edu.br</code> autorizados.</div>'+
   '<div class="divider">ou acesso externo (Avaliador MEC)</div>'+
   '<label for="em">E-mail cadastrado</label><input id="em" type="email" placeholder="avaliador@mec.gov.br" onkeydown="if(event.key===\'Enter\')loginToken()">'+
@@ -212,43 +399,174 @@ function vLogin(){
   '</div></div>';
 }
 
-function sendInstOtp(){
-  var e=($('#inst-em').value||'').trim().toLowerCase();
-  if(!e)e='cpa@impacta.edu.br';
+function resetOtp(){
+  OTP={email:'',code:'',expires:0,role:'aluno',nome:'',sent:false};
+  render();
+}
 
-  var u=DB.users[e];
-  if(u){
-    DB.u={n:u.n||formatNameFromEmail(e),r:u.r,tipo:'sso'};
-  }else if(e.indexOf('cpa')>-1){
-    DB.u={n:formatNameFromEmail(e),r:'cpa',tipo:'sso'};
-  }else if(e.indexOf('coord')>-1){
-    DB.u={n:formatNameFromEmail(e),r:'coord',tipo:'sso'};
-  }else{
-    DB.u={n:formatNameFromEmail(e),r:'aluno',tipo:'sso'};
+async function sendInstOtp(){
+  var e=$('#inst-em').value.trim().toLowerCase();
+  var errEl=$('#lerr');
+  errEl.style.color='var(--err)';
+  errEl.textContent='';
+
+  if(!e||!isImpactaDomain(e)){
+    errEl.textContent='Informe um e-mail institucional válido (@aluno.impacta.edu.br ou @impacta.edu.br).';
+    return;
   }
 
-  toast('Autenticado com sucesso.');
-  go('dashboards');
+  // Contas base de demonstração entram direto para facilitar testes e apresentação
+  var coreDemo=DB.users[e];
+  if(coreDemo&&coreDemo.core){
+    DB.u={n:coreDemo.n,r:coreDemo.r,tipo:'sso'};
+    saveSession();
+    await registrarAcesso(e,DB.u,'Conta Base CPA');
+    toast('Autenticado com sucesso.');
+    go('dashboards');
+    return;
+  }
+
+  // Consulta no banco em tempo real se é Coordenação / Admin CPA autorizado
+  var {data,error}=await sb.from('usuarios_cpa').select('*').eq('email',e).eq('tipo','sso').maybeSingle();
+  if(!error&&data){
+    DB.users[e]={n:data.nome||formatNameFromEmail(e),r:data.role,tipo:'sso'};
+  }
+
+  var u=DB.users[e];
+  var targetRole='';
+  var targetName='';
+
+  if(u&&u.tipo==='sso'){
+    targetRole=u.r;
+    targetName=u.n||formatNameFromEmail(e);
+  }else if(isStudentDomain(e)){
+    targetRole='aluno';
+    targetName=formatNameFromEmail(e);
+  }else{
+    if(e.indexOf('@aluno.')>-1){
+      errEl.textContent='Formato discente inválido. Use nome.sobrenome@aluno.impacta.edu.br.';
+    }else{
+      errEl.textContent='Acesso negado: o e-mail "'+e+'" não está autorizado como Coordenação ou CPA.';
+    }
+    return;
+  }
+
+  var btn=$('#btn-inst-otp');
+  if(btn){btn.disabled=true;btn.textContent='Enviando código...';}
+
+  var code=String(Math.floor(100000+Math.random()*900000));
+  try{
+    await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+      to_name:targetName,
+      to_email:e,
+      portal_link:getPortalLoginUrl(),
+      token:code,
+      validade:'10 minutos (Código de Verificação Institucional)'
+    });
+    OTP={
+      email:e,
+      code:code,
+      expires:Date.now()+10*60*1000,
+      role:targetRole,
+      nome:targetName,
+      sent:true
+    };
+    toast('Código enviado para '+e+'!');
+    render();
+    setTimeout(function(){var inp=$('#otp-code');if(inp)inp.focus();},50);
+  }catch(err){
+    console.error('Erro EmailJS:',err);
+    if(btn){btn.disabled=false;btn.textContent='Receber código de acesso no e-mail';}
+    errEl.textContent='Não foi possível enviar o código: '+(err.text||err.message||'verifique o EmailJS.');
+  }
 }
 
-function requestTokenEmail(){
-  var e=($('#em').value||'').trim().toLowerCase()||'avaliador@mec.gov.br';
+async function verifyInstOtp(){
+  var typed=($('#otp-code').value||'').trim();
   var errEl=$('#lerr');
-  errEl.style.color='var(--ok)';
-  errEl.textContent='Token enviado para '+e+'! Verifique sua caixa de entrada ou spam.';
-  toast('Token simulado para '+e);
+  errEl.style.color='var(--err)';
+
+  if(!OTP.sent||!OTP.code){
+    errEl.textContent='Solicite um código primeiro.';
+    return;
+  }
+  if(Date.now()>OTP.expires){
+    errEl.textContent='Código expirado. Clique em "Trocar e-mail" para solicitar um novo.';
+    return;
+  }
+  if(typed!==OTP.code){
+    errEl.textContent='Código incorreto. Verifique o número de 6 dígitos enviado para '+OTP.email+'.';
+    return;
+  }
+
+  var verifiedEmail=OTP.email;
+  DB.u={n:OTP.nome,r:OTP.role,tipo:'sso'};
+  OTP={email:'',code:'',expires:0,role:'aluno',nome:'',sent:false};
+  saveSession();
+  await registrarAcesso(verifiedEmail,DB.u,'Verificação E-mail Impacta');
+  toast('E-mail verificado! Bem-vindo(a), '+DB.u.n+'.');
+  go('dashboards');
 }
 
-function loginToken(){
-  var e=($('#em').value||'').trim().toLowerCase()||'avaliador@mec.gov.br';
-  var u=DB.users[e]||{n:formatNameFromEmail(e),r:'aval',tipo:'token'};
-  DB.u=u;
-  toast('Acesso externo autorizado.');
-  go('dashboards');
+async function requestTokenEmail(){
+  var e=$('#em').value.trim().toLowerCase();
+  var errEl=$('#lerr');
+  errEl.style.color='var(--err)';
+  if(!e){
+    errEl.textContent='Digite seu e-mail cadastrado acima para receber o token.';
+    return;
+  }
+  if(isImpactaDomain(e)){
+    errEl.textContent='Contas da Impacta devem usar o campo "E-mail institucional Impacta" acima.';
+    return;
+  }
+  var u=DB.users[e];
+  if(!u||u.tipo!=='token'){
+    errEl.textContent='E-mail não habilitado como avaliador externo. Solicite o cadastro à CPA.';
+    return;
+  }
+  var hoje=new Date().toISOString().slice(0,10);
+  if(u.exp&&u.exp<hoje){
+    errEl.textContent='O token cadastrado para este e-mail expirou em '+fmt(u.exp)+'. Solicite renovação à CPA.';
+    return;
+  }
+  var btn=$('#btn-req-tk');
+  if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+  var ok=await sendInviteEmail(e);
+  if(btn){btn.disabled=false;btn.textContent='Receber token por e-mail';}
+  if(ok){
+    errEl.style.color='var(--ok)';
+    errEl.textContent='Token enviado para '+e+'! Verifique sua caixa de entrada ou spam.';
+  }
+}
+
+async function loginToken(){
+  var e=$('#em').value.trim().toLowerCase(),t=$('#tk').value.trim();
+  $('#lerr').style.color='var(--err)';
+  if(isImpactaDomain(e)){
+    $('#lerr').textContent='Contas da Impacta devem usar o campo "E-mail institucional Impacta" acima.';
+    return;
+  }
+  var u=DB.users[e];
+  if(u&&u.tipo==='token'&&u.token===t){
+    var hoje=new Date().toISOString().slice(0,10);
+    if(u.exp&&u.exp<hoje){
+      $('#lerr').textContent='Este token expirou em '+fmt(u.exp)+'. Solicite um novo código à CPA.';
+      return;
+    }
+    DB.u=u;
+    saveSession();
+    await registrarAcesso(e,DB.u,'Token MEC');
+    toast('Acesso externo autorizado.');go('dashboards');
+  }else{
+    $('#lerr').textContent='E-mail ou token de acesso inválido.';
+  }
 }
 
 function logout(){
+  // Apenas encerra a sessão atual (DB.logs permanece intacto no banco e no backup)
   DB.u=null;
+  saveSession();
   toast('Sessão encerrada.');
   go('mural');
 }
@@ -268,23 +586,26 @@ function vDash(){
 
   h+=aviso+'<iframe class="dash" title="'+esc(cur.t)+'" src="'+esc(cur.url)+'" loading="lazy" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>';
 
-  if(role()==='cpa')h+='<div class="panel" style="margin-top:16px"><h2>Configuração do Embed (Admin CPA)</h2><label for="eu">URL de incorporação do Looker Studio / Data Studio</label><input id="eu" value="'+esc(cur.url)+'"><div style="margin-top:12px"><button onclick="setUrl()">Salvar alteração</button></div></div>';
+  if(role()==='cpa')h+='<div class="panel" style="margin-top:16px"><h2>Configuração do Embed (Admin CPA)</h2><label for="eu">URL de incorporação do Looker Studio / Data Studio</label><input id="eu" value="'+esc(cur.url)+'"><div style="margin-top:12px"><button onclick="setUrl()">Salvar no banco de dados</button></div></div>';
   return h;
 }
 function pick(i){UI.dash=i;render()}
 
-function setUrl(){
+async function setUrl(){
   var u=$('#eu').value.trim();
   if(u.indexOf('https://')!==0){toast('A URL deve começar com https://');return}
+  toast('Salvando no Supabase...');
+  var {error}=await sb.from('dashboards').update({url:u}).eq('id',UI.dash);
+  if(error){toast('Erro ao salvar: '+error.message);return}
   DB.dash.forEach(function(d){if(d.id===UI.dash)d.url=u});
-  toast('URL do dashboard atualizada!');render();
+  toast('URL do dashboard salva no banco!');render();
 }
 
 function vMural(){
   var h='<h1>Mural de devolutivas</h1><p class="lead">Acompanhe as ações e respostas das áreas às demandas levantadas nas pesquisas da CPA.</p>';
   if(!DB.u)h+='<div class="note"><span>Pertence à comunidade acadêmica ou comissão do MEC? Faça login para visualizar os dashboards.</span><button class="sm" onclick="go(\'login\')">Entrar no portal</button></div>';
 
-  if(role()==='cpa')h+='<details class="panel" style="margin-bottom:20px"><summary>+ Publicar nova devolutiva</summary><label for="ma">Área responsável</label><input id="ma" placeholder="Ex: Biblioteca, TI, Coordenação de Curso"><label for="md">Demanda levantada na pesquisa</label><textarea id="md" rows="2"></textarea><label for="mr">Resposta / Ação realizada</label><textarea id="mr" rows="3"></textarea><label for="ms">Status</label><select id="ms"><option>Resolvido</option><option>Em andamento</option></select><div style="margin-top:14px"><button class="acc" onclick="addMural()">Publicar no mural</button></div></details>';
+  if(role()==='cpa')h+='<details class="panel" style="margin-bottom:20px"><summary>+ Publicar nova devolutiva</summary><label for="ma">Área responsável</label><input id="ma" placeholder="Ex: Biblioteca, TI, Coordenação de Curso"><label for="md">Demanda levantada na pesquisa</label><textarea id="md" rows="2"></textarea><label for="mr">Resposta / Ação realizada</label><textarea id="mr" rows="3"></textarea><label for="ms">Status</label><select id="ms"><option>Resolvido</option><option>Em andamento</option></select><div style="margin-top:14px"><button class="acc" onclick="addMural()">Publicar no banco</button></div></details>';
 
   h+='<div class="filters"><input type="search" placeholder="Buscar por área ou palavra-chave..." value="'+esc(UI.muralSearch)+'" oninput="UI.muralSearch=this.value;renderMuralList()">'+
   '<div class="tabs" style="margin:0">'+
@@ -310,22 +631,28 @@ function renderMuralList(){
   }).join('');
 }
 
-function addMural(){
+async function addMural(){
   var a=$('#ma').value.trim(),d=$('#md').value.trim(),r=$('#mr').value.trim(),st=$('#ms').value;
   if(!a||!d||!r){toast('Preencha todos os campos.');return}
-  var hoje=new Date().toISOString().slice(0,10);
-  DB.mural.unshift({id:Date.now(),area:a,dem:d,res:r,st:st,data:hoje});
-  toast('Devolutiva publicada!');render();
+  toast('Salvando devolutiva...');
+  var {data,error}=await sb.from('mural').insert([{area:a,demanda:d,resposta:r,status:st}]).select();
+  if(error){toast('Erro ao publicar: '+error.message);return}
+  if(data&&data[0])DB.mural.unshift({id:data[0].id,area:data[0].area,dem:data[0].demanda,res:data[0].resposta,st:data[0].status,data:data[0].data});
+  toast('Devolutiva salva no Supabase!');render();
 }
 
-function toggleMural(id){
+async function toggleMural(id){
   var item=DB.mural.filter(function(m){return m.id===id})[0];
   if(!item)return;
-  item.st=item.st==='Resolvido'?'Em andamento':'Resolvido';
-  toast('Status atualizado.');render();
+  var novo=item.st==='Resolvido'?'Em andamento':'Resolvido';
+  var {error}=await sb.from('mural').update({status:novo}).eq('id',id);
+  if(error){toast('Erro: '+error.message);return}
+  item.st=novo;toast('Status atualizado no banco.');render();
 }
 
-function delMural(id){
+async function delMural(id){
+  var {error}=await sb.from('mural').delete().eq('id',id);
+  if(error){toast('Erro: '+error.message);return}
   DB.mural=DB.mural.filter(function(m){return m.id!==id});
   toast('Devolutiva removida.');render();
 }
@@ -428,16 +755,19 @@ function vRel(){
   return h+'</div>';
 }
 
-function addRel(){
+async function addRel(){
   var t=$('#rt').value.trim(),arq=$('#rf').value.trim(),tipo=$('#rp').value;
   if(!t){toast('Informe o título do documento.');return}
   if(!arq)arq=t.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.pdf';
-  var hoje=new Date().toISOString().slice(0,10);
-  DB.rels.unshift({id:Date.now(),t:t,tipo:tipo,data:hoje,arq:arq});
-  toast('Documento salvo!');render();
+  var {data,error}=await sb.from('relatorios').insert([{titulo:t,tipo:tipo,arquivo_url:arq}]).select();
+  if(error){toast('Erro: '+error.message);return}
+  if(data&&data[0])DB.rels.unshift({id:data[0].id,t:data[0].titulo,tipo:data[0].tipo,data:data[0].data,arq:data[0].arquivo_url});
+  toast('Documento salvo no Supabase!');render();
 }
 
-function delRel(id){
+async function delRel(id){
+  var {error}=await sb.from('relatorios').delete().eq('id',id);
+  if(error){toast('Erro: '+error.message);return}
   DB.rels=DB.rels.filter(function(r){return r.id!==id});
   toast('Documento removido.');render();
 }
@@ -448,16 +778,18 @@ function vContato(){
   '<a class="btn" href="'+esc(c.chat||'https://chat.google.com')+'" target="_blank" rel="noopener">Abrir Google Chat</a>'+
   '<a class="btn alt" href="'+esc(c.meet||'https://meet.google.com')+'" target="_blank" rel="noopener">Sala Google Meet</a></div>';
 
-  if(role()==='cpa')h+='<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)"><strong>Configurar links da sala (Admin CPA)</strong><label for="cchat">URL Google Chat</label><input id="cchat" placeholder="https://chat.google.com/..." value="'+esc(c.chat)+'"><label for="cmeet">URL Google Meet</label><input id="cmeet" placeholder="https://meet.google.com/..." value="'+esc(c.meet)+'"><div style="margin-top:12px"><button class="sm" onclick="saveContato()">Salvar</button></div></div>';
+  if(role()==='cpa')h+='<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)"><strong>Configurar links da sala (Admin CPA)</strong><label for="cchat">URL Google Chat</label><input id="cchat" placeholder="https://chat.google.com/..." value="'+esc(c.chat)+'"><label for="cmeet">URL Google Meet</label><input id="cmeet" placeholder="https://meet.google.com/..." value="'+esc(c.meet)+'"><div style="margin-top:12px"><button class="sm" onclick="saveContato()">Salvar no banco</button></div></div>';
 
   h+='</div><div class="panel"><h2>Envie uma mensagem</h2><label for="cn">Seu nome</label><input id="cn"><label for="ce">E-mail para retorno</label><input id="ce" type="email"><label for="cm">Mensagem ou sugestão</label><textarea id="cm" rows="4"></textarea><div style="margin-top:14px"><button onclick="sendMsg()">Enviar mensagem</button></div></div></div>';
   return h;
 }
 
-function saveContato(){
-  DB.contato.chat=$('#cchat').value.trim();
-  DB.contato.meet=$('#cmeet').value.trim();
-  toast('Links salvos!');render();
+async function saveContato(){
+  var chat=$('#cchat').value.trim(),meet=$('#cmeet').value.trim();
+  var {error}=await sb.from('configuracoes').update({chat_url:chat,meet_url:meet}).eq('id',1);
+  if(error){toast('Erro: '+error.message);return}
+  DB.contato.chat=chat;DB.contato.meet=meet;
+  toast('Links salvos no Supabase!');render();
 }
 
 function sendMsg(){
@@ -465,21 +797,30 @@ function sendMsg(){
   toast('Mensagem registrada para a CPA.');render();
 }
 
+function renderLogsRows(){
+  if(!DB.logs.length){
+    return '<tr><td colspan="5" class="meta">Nenhum acesso registrado ainda.</td></tr>';
+  }
+  return DB.logs.map(function(l){
+    return '<tr><td>'+fmtDateTime(l.acessado_em)+'</td><td>'+esc(l.nome||'-')+'</td><td>'+esc(l.email)+'</td><td><span class="tag">'+esc(ROLE[l.role]||l.role)+'</span></td><td>'+esc(l.metodo)+'</td></tr>';
+  }).join('');
+}
+
 function vAcessos(){
   var perfis=['aluno','coord','cpa','aval'];
   var h='<h1>Acessos e Permissões</h1><p class="lead">Verificação por e-mail sem custo externo: alunos validam por código no <code>@aluno.impacta.edu.br</code>; Coordenação, CPA e Avaliadores MEC são gerenciados abaixo.</p>';
 
   h+='<div class="grid g2" style="margin-bottom:24px">'+
-    '<div class="panel"><h2>Autorizar Coordenação / CPA (Lote ou Individual)</h2><p class="meta">Cole um ou vários e-mails <code>@impacta.edu.br</code> (um por linha) para habilitar perfis privilegiados.</p>'+
+    '<div class="panel"><h2>Autorizar Coordenação / CPA (Lote ou Individual)</h2><p class="meta">Cole um ou vários e-mails <code>@impacta.edu.br</code> (um por linha) para habilitar perfis privilegiados. Alunos recebem o código automaticamente.</p>'+
     '<label for="ie">E-mails institucionais (um por linha)</label><textarea id="ie" rows="3" placeholder="prof.carlos@impacta.edu.br&#10;coord.ads@impacta.edu.br"></textarea>'+
     '<label for="ir">Perfil de acesso</label><select id="ir"><option value="coord">Coordenador (vê todos os 4 dashboards)</option><option value="cpa">Admin CPA (acesso total + gestão)</option></select>'+
-    '<div style="margin-top:14px"><button class="acc" id="btn-add-inst" onclick="addInstBatch()">Autorizar e-mail(s)</button></div></div>'+
+    '<div style="margin-top:14px"><button class="acc" id="btn-add-inst" onclick="addInstBatch()">Autorizar e-mail(s) no banco</button></div></div>'+
 
-    '<div class="panel"><h2>Gerar token externo (Avaliador MEC)</h2><p class="meta">Gera credencial temporária para o avaliador externo.</p>'+
+    '<div class="panel"><h2>Gerar token externo (Avaliador MEC)</h2><p class="meta">Salva a credencial no Supabase e dispara o convite por e-mail para o avaliador externo.</p>'+
     '<label for="mn">Nome do Avaliador / Comissão</label><input id="mn" placeholder="Ex: Avaliador INEP/MEC">'+
     '<label for="me">E-mail do destinatário</label><input id="me" type="email" placeholder="avaliador@inep.gov.br">'+
     '<div class="grid g2" style="gap:10px"><div><label for="mt">Token de Acesso</label><input id="mt" value="MEC-'+Math.floor(1000+Math.random()*9000)+'"></div><div><label for="mx">Validade</label><input id="mx" type="date" value="2026-12-31"></div></div>'+
-    '<div style="margin-top:14px"><button class="acc" id="btn-add-mec" onclick="addMec()">Salvar e gerar convite</button></div></div>'+
+    '<div style="margin-top:14px"><button class="acc" id="btn-add-mec" onclick="addMec()">Salvar e enviar por e-mail</button></div></div>'+
   '</div>';
 
   h+='<div class="panel scroll" style="margin-bottom:24px"><h2>Matriz de Visibilidade por Perfil</h2><table><thead><tr><th>Recurso / Dashboard</th><th class="c">Aluno</th><th class="c">Coordenador</th><th class="c">Admin CPA</th><th class="c">Avaliador MEC</th></tr></thead><tbody>';
@@ -495,7 +836,7 @@ function vAcessos(){
   });
   h+='</tbody></table></div>';
 
-  h+='<div class="panel scroll" style="margin-bottom:24px"><h2>Perfis Privilegiados Autorizados (Coordenação e CPA)</h2><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ações</th></tr></thead><tbody>';
+  h+='<div class="panel scroll" style="margin-bottom:24px"><h2>Perfis Privilegiados Autorizados (Coordenação e CPA)</h2><p class="meta" style="margin-top:0">Discentes com <code>nome.sobrenome@aluno.impacta.edu.br</code> validam o acesso via código de 6 dígitos enviado para o e-mail real.</p><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ações</th></tr></thead><tbody>';
   Object.keys(DB.users).forEach(function(k){
     var u=DB.users[k];
     if(u.tipo==='sso'){
@@ -505,31 +846,85 @@ function vAcessos(){
   });
   h+='</tbody></table></div>';
 
-  h+='<div class="panel scroll"><h2>Tokens Externos Ativos</h2><table><thead><tr><th>Nome</th><th>E-mail</th><th>Token</th><th>Validade</th><th>Ações</th></tr></thead><tbody>';
+  h+='<div class="panel scroll" style="margin-bottom:24px"><h2>Tokens Externos Ativos</h2><table><thead><tr><th>Nome</th><th>E-mail</th><th>Token</th><th>Validade</th><th>Ações</th></tr></thead><tbody>';
   Object.keys(DB.users).forEach(function(k){
     var u=DB.users[k];
-    if(u.tipo==='token')h+='<tr><td>'+esc(u.n)+'</td><td>'+esc(k)+'</td><td><code>'+esc(u.token)+'</code></td><td>'+fmt(u.exp)+'</td><td style="display:flex;gap:6px;flex-wrap:wrap"><button class="alt sm" onclick="copyInvite(\''+k+'\')">Copiar</button><button class="alt sm" onclick="delUser(\''+k+'\')">Revogar</button></td></tr>';
+    if(u.tipo==='token')h+='<tr><td>'+esc(u.n)+'</td><td>'+esc(k)+'</td><td><code>'+esc(u.token)+'</code></td><td>'+fmt(u.exp)+'</td><td style="display:flex;gap:6px;flex-wrap:wrap"><button class="sm" onclick="sendInviteEmail(\''+k+'\')">Enviar token por e-mail</button><button class="alt sm" onclick="copyInvite(\''+k+'\')">Copiar</button><button class="alt sm" onclick="delUser(\''+k+'\')">Revogar</button></td></tr>';
   });
   h+='</tbody></table></div>';
+
+  h+='<div class="panel scroll"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap"><h2 style="margin:0">Histórico Permanente de Acessos (Últimos 100 logins)</h2><button class="alt sm" onclick="refreshLogs()">Atualizar lista</button></div><table><thead><tr><th>Data / Hora</th><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Método</th></tr></thead><tbody id="logs-tbody">'+renderLogsRows()+'</tbody></table></div>';
   return h;
 }
 
-function addInstBatch(){
+async function addInstBatch(){
   var raw=$('#ie').value.trim(),r=$('#ir').value;
   if(!raw){toast('Cole ao menos um e-mail institucional.');return;}
   var lines=raw.split(/[\n,;]+/).map(function(s){return s.trim().toLowerCase()}).filter(Boolean);
+  var valid=[],invalid=[];
   lines.forEach(function(e){
-    DB.users[e]={n:formatNameFromEmail(e),r:r,tipo:'sso'};
+    if(isImpactaDomain(e))valid.push(e);
+    else invalid.push(e);
   });
-  toast(lines.length+' e-mail(s) autorizado(s) com sucesso!');
+  if(invalid.length){
+    toast('E-mail inválido ignorado: '+invalid[0]+' (use @impacta.edu.br)');
+    if(!valid.length)return;
+  }
+
+  var btn=$('#btn-add-inst');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+
+  var rows=valid.map(function(e){
+    return {email:e,nome:formatNameFromEmail(e),role:r,tipo:'sso',token:null,expira_em:null};
+  });
+
+  var {error}=await sb.from('usuarios_cpa').upsert(rows);
+  if(error){
+    toast('Erro ao salvar no banco: '+error.message);
+    if(btn){btn.disabled=false;btn.textContent='Autorizar e-mail(s) no banco';}
+    return;
+  }
+  rows.forEach(function(row){
+    DB.users[row.email]={n:row.nome,r:row.role,tipo:'sso'};
+  });
+  toast(rows.length+' e-mail(s) autorizado(s) com sucesso!');
   render();
 }
 
-function addMec(){
+async function sendInviteEmail(email){
+  var u=DB.users[email];if(!u)return false;
+  var portalLink=getPortalLoginUrl();
+  try{
+    await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+      to_name:u.n,
+      to_email:email,
+      portal_link:portalLink,
+      token:u.token,
+      validade:fmt(u.exp)
+    });
+    toast('E-mail enviado com sucesso para '+email+'!');
+    return true;
+  }catch(err){
+    console.error('Erro EmailJS:',err);
+    toast('Erro ao enviar e-mail: '+(err.text||err.message||'verifique o EmailJS'));
+    return false;
+  }
+}
+
+async function addMec(){
   var n=$('#mn').value.trim(),e=$('#me').value.trim().toLowerCase(),t=$('#mt').value.trim(),x=$('#mx').value;
   if(!n||!e||!t){toast('Preencha nome, e-mail e token.');return}
+  var btn=$('#btn-add-mec');
+  if(btn){btn.disabled=true;btn.textContent='Salvando e enviando...';}
+
+  var {error}=await sb.from('usuarios_cpa').upsert([{email:e,nome:n,role:'aval',tipo:'token',token:t,expira_em:x}]);
+  if(error){
+    toast('Erro ao salvar no banco: '+error.message);
+    if(btn){btn.disabled=false;btn.textContent='Salvar e enviar por e-mail';}
+    return;
+  }
   DB.users[e]={n:n,r:'aval',tipo:'token',token:t,exp:x};
-  toast('Credencial criada!');
+  await sendInviteEmail(e);
   render();
 }
 
@@ -543,12 +938,14 @@ function copyInvite(email){
   }
 }
 
-function delUser(e){
-  delete DB.users[e];toast('Acesso revogado.');render();
+async function delUser(e){
+  var {error}=await sb.from('usuarios_cpa').delete().eq('email',e);
+  if(error){toast('Erro: '+error.message);return}
+  delete DB.users[e];toast('Acesso revogado do banco.');render();
 }
 
 window.addEventListener('hashchange',render);
-render();
+syncFromSupabase();
 </script>
 </body>
 </html>
