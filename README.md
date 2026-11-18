@@ -2,6 +2,42 @@
 
 Projeto de extensão do Centro Universitário Impacta: portal web da **Comissão Própria de Avaliação (CPA)** com níveis de acesso, dashboards das pesquisas, mural de devolutivas e área de relatórios.
 
+## Acesso para avaliação
+
+Portal no ar: **https://cpa.marcosfc.site**
+
+Mural, relatórios e contato abrem sem login. Para ver cada perfil, clique **Entrar** → **Acesso de demonstração (avaliação do projeto)** e use uma das contas abaixo.
+
+Senha das quatro contas: **`CPA-Impacta-2026`**
+
+| Conta | Perfil | O que permite |
+|---|---|---|
+| `aluno.demo@cpa.marcosfc.site` | Aluno | painéis da pesquisa com alunos (Presencial e EAD), mural, relatórios e contato |
+| `coord.demo@cpa.marcosfc.site` | Coordenador | os painéis dos alunos, Professores (avaliação docente) e Corpo técnico-administrativo |
+| `avaliador.demo@cpa.marcosfc.site` | Avaliador externo (válido até 31/12/2027) | todos os painéis |
+| `admin.demo@cpa.marcosfc.site` | Administração (CPA) | tudo, mais: publicar e remover devolutivas, enviar e remover PDFs, adicionar, editar e remover painéis, editar links de atendimento, autorizar e revogar acessos, histórico e mensagens |
+
+Os dados são **fictícios** e podem ser mexidos à vontade: a equipe restaura tudo com `node scripts/restaurar-demo.mjs`. A conta de administração de demonstração tem alguns limites para a senha pública não virar problema: não remove o dono do portal nem as outras contas de demonstração (acessos protegidos), não cria outro administrador, não envia e-mails de convite e não vê histórico nem mensagens de pessoas reais.
+
+Os painéis são do Looker Studio e só carregam com uma conta Google da Impacta logada no navegador; sem ela aparece "Não é possível acessar o relatório" (limite do Looker, não do portal).
+
+| Mural (público) | Dashboards da coordenação |
+|---|---|
+| ![Mural de devolutivas](docs/img/01-mural.png) | ![Dashboards da coordenação](docs/img/30-coord-dashboards.png) |
+
+| Administração: painéis | Celular |
+|---|---|
+| ![Editar e adicionar painel](docs/img/51-admin-editar-e-adicionar-painel.png) | <img src="docs/img/mobile/01-mural.png" alt="Mural no celular" width="240"> |
+
+### Documentação
+- [Requisitos e matriz de permissões](docs/requisitos.md)
+- [Modelo de dados](docs/modelo-de-dados.md)
+- [Documentação técnica](docs/documentacao-tecnica.md) (arquitetura, login, endpoints, deploy, segurança, limites)
+- [Manual do usuário](docs/manual-do-usuario.md)
+- [Testes](docs/testes.md)
+- [Evidências (prints por fase e por requisito)](docs/evidencias.md)
+- [Plano do projeto](docs/plano.md) · [Dashboards da CPA](docs/dashboards.md) · [Identidade visual](docs/identidade-visual.md) · [KPIs](docs/kpis-cpa.md)
+
 - **Prazo de execução:** 04/09/2026 a 19/11/2026 (120 h)
 - **RPE:** Osvaldo Takai · **IPC:** Renato de Souza Santos (Presidente da CPA)
 - **Equipe:** Beatriz Naomi Nishimura, Jiulia Paola Rossi Severi, Kaique da Silva Cunha, Marcos Felipe Choppick Pires, Vitória Claudia Furriel da Silva
@@ -56,6 +92,10 @@ Quem vê o quê:
 | Mural de devolutivas e relatórios | sim | sim | sim | sim (também sem login) |
 | Administração do portal | – | – | sim | – |
 
+O painel de **egressos** ainda não foi enviado pela CPA. Quando chegar, a administração adiciona em Dashboards → **Adicionar painel** (perfis Coordenação e Avaliadores externos), sem mexer no código. Matriz completa em [docs/requisitos.md](docs/requisitos.md).
+
+As contas de demonstração (`@cpa.marcosfc.site`) entram com e-mail e senha (`signInWithPassword`); o resto do fluxo é o mesmo.
+
 ## Estrutura de pastas
 ```
 index.html              página do portal
@@ -71,11 +111,15 @@ api/                    funções da Vercel (rodam no servidor)
   _lib/                 cliente do Supabase, envio de e-mail e modelos de e-mail
 supabase/
   schema.sql            tabelas, funções, regras de segurança e bucket dos PDFs
+  migracoes/002_demo.sql contas de demonstração, acessos protegidos, gestão de painéis
   seed.sql              dados iniciais
 scripts/
   upload-relatorios.mjs envia os PDFs oficiais da CPA para o Storage
+  restaurar-demo.mjs    recria as contas de demonstração e desfaz o que elas mexeram
+  testar-api.mjs        testes de permissões, segurança e erros pela API
+  testar-telas.mjs      testes no navegador e prints de docs/img
   checar-sintaxe.mjs    confere a sintaxe de todos os arquivos .js
-docs/                   requisitos, identidade visual, KPIs e plano
+docs/                   requisitos, modelo de dados, documentação técnica, manual, testes e evidências
 ```
 
 ## Variáveis de ambiente
@@ -94,7 +138,7 @@ A chave **pública** (`anon`) do Supabase vai em `assets/config.js`, junto com o
 
 ## Como preparar o Supabase
 1. Crie o projeto no Supabase.
-2. Em **SQL Editor**, rode `supabase/schema.sql` e depois `supabase/seed.sql`. Os dois podem ser rodados de novo sem duplicar dados.
+2. Em **SQL Editor**, rode `supabase/schema.sql` e depois `supabase/seed.sql`. Os dois podem ser rodados de novo sem duplicar dados. (Num banco que já tinha a versão anterior do `schema.sql`, rode antes `supabase/migracoes/002_demo.sql`.)
 3. Em **Authentication → Sign In / Providers → Email**:
    - deixe o provedor de e-mail ligado e a confirmação de e-mail ligada;
    - **desligue "Allow new users to sign up"** (as contas são criadas só pelo servidor, depois da checagem);
@@ -106,7 +150,7 @@ A chave **pública** (`anon`) do Supabase vai em `assets/config.js`, junto com o
    No PowerShell: `$env:SUPABASE_URL="..."; $env:SUPABASE_SERVICE_ROLE_KEY="..."; node scripts/upload-relatorios.mjs`
 5. Preencha `assets/config.js` com o endereço e a chave `anon` do projeto.
 
-O seed já deixa `marcos.pires@aluno.impacta.edu.br` como administrador da CPA. Os demais acessos são liberados pela tela **Acessos e Perfis**.
+O seed já deixa `marcos.pires@aluno.impacta.edu.br` como administrador da CPA (acesso protegido) e cadastra as contas de demonstração. As senhas das contas de demonstração são criadas por `node scripts/restaurar-demo.mjs`. Os demais acessos são liberados pela tela **Acessos e Perfis**.
 
 ## Como enviar e-mails (Resend)
 1. Crie uma conta no Resend e gere uma API key.
@@ -126,6 +170,14 @@ npx vercel dev
 O `vercel dev` serve a página e as funções de `/api` em `http://localhost:3000` (na primeira vez ele pede login na Vercel e para ligar a pasta a um projeto). Abrir o `index.html` direto no navegador ou com um servidor simples mostra as telas, mas o login e o contato não funcionam sem as funções.
 
 Para conferir a sintaxe de todos os arquivos: `npm run check`.
+
+Testes automatizados (usam o `.env.local` e o portal publicado; criam só dados de teste e apagam no final):
+
+```
+npm run testar:api       # permissões, segurança e casos de erro
+npm run testar:telas     # telas no navegador (Edge ou Chrome) e prints de docs/img
+npm run restaurar-demo   # volta a demonstração ao estado inicial
+```
 
 ## Onde fica cada coisa
 - **Código:** este repositório.

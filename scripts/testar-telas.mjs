@@ -66,6 +66,7 @@ async function nova(modo) {
 
 async function print(p, nome, inteira = true) {
   await mascarar(p);
+  if (inteira) await p.evaluate(() => window.scrollTo(0, 0));
   await espera(250);
   await p.screenshot({ path: join(DIR[p.modo], nome + '.png'), fullPage: inteira });
   if (p.modo === 'mobile') {
