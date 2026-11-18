@@ -26,6 +26,10 @@
   var RE_ALUNO = /^[a-z0-9_.-]+@aluno\.impacta\.edu\.br$/;
   var RE_IMPACTA = /^[a-z0-9_.+-]+@impacta\.edu\.br$/;
   var RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Contas de demonstração (avaliação do projeto): entram com e-mail e senha
+  var RE_DEMO = /^[a-z0-9._-]+@cpa\.marcosfc\.site$/;
+  // Só painéis do Looker Studio (o banco tem a mesma regra)
+  var RE_LOOKER = /^https:\/\/(lookerstudio|datastudio)\.google\.com\//i;
   var BUCKET = 'relatorios';
   var ESPERA_REENVIO = 60;
 
@@ -149,7 +153,7 @@
   // Tradução das mensagens do Supabase para algo que a pessoa entenda
   function msgErro(err, padrao) {
     var m = String((err && (err.message || err.error_description)) || '');
-    if (err) console.error(err);
+    if (err) console.warn(err);
     if (/row-level security|permission denied|not allowed|unauthorized/i.test(m)) return 'Você não tem permissão para fazer isso.';
     if (/failed to fetch|network|load failed/i.test(m)) return 'Sem conexão com o servidor. Confira a internet e tente de novo.';
     if (/jwt|session/i.test(m)) return 'Sua sessão expirou. Entre de novo.';
@@ -278,6 +282,8 @@
   // ------------------------------------------------------------------
   // Rotas
   // ------------------------------------------------------------------
+  // Decide a tela pelo endereço (#mural, #login...). Telas restritas voltam para o login
+  // ou para os painéis; a proteção de verdade está no banco (RLS), não aqui.
   function rotaAtual() {
     var v = (location.hash || '').slice(1);
     if (ROTAS.indexOf(v) < 0) v = temPerfil() ? 'dashboards' : 'mural';
@@ -287,6 +293,7 @@
     return v;
   }
 
+  // Desenha o topo e a tela atual. Chamada a cada troca de rota e depois de cada ação.
   function render() {
     var v = rotaAtual();
     var mudou = v !== UI.view;
@@ -365,6 +372,7 @@
     S.dash.estado = 'ok';
   }
 
+  // Pergunta ao banco quem é a pessoa logada (perfil e nome) e carrega os painéis do perfil.
   async function carregarPerfil() {
     if (!sb || !S.sessao) return;
     S.email = String((S.sessao.user && S.sessao.user.email) || '').toLowerCase();
@@ -382,12 +390,13 @@
     await carregarDashboards();
   }
 
+  // Tela Acessos e Perfis: pessoas autorizadas, últimos acessos e mensagens (só CPA).
   async function carregarAcessos() {
     if (!ehCpa()) return;
     S.usuarios.estado = S.logs.estado = S.msgs.estado = 'carregando';
     atualizar();
     var res = await Promise.all([
-      sb.from('usuarios_cpa').select('email, nome, role, tipo, expira_em, criado_em').order('criado_em', { ascending: false }),
+      sb.from('usuarios_cpa').select('email, nome, role, tipo, expira_em, protegido, criado_em').order('criado_em', { ascending: false }),
       sb.from('logs_acesso').select('email, nome, role, metodo, acessado_em').order('acessado_em', { ascending: false }).limit(100),
       sb.from('mensagens_contato').select('id, nome, email, mensagem, enviada_em').order('enviada_em', { ascending: false }).limit(100)
     ]);
@@ -453,7 +462,20 @@
 
     var L = UI.login;
     var form;
-    if (L.etapa === 'codigo') {
+    if (L.etapa === 'senha') {
+      form = '<form class="acesso-form" data-form="senha" novalidate>' +
+        '<h2 id="titulo-login">Acesso de demonstração</h2>' +
+        '<p class="regra">Para a avaliação do projeto. As contas e a senha estão no README do repositório; os dados são fictícios.</p>' +
+        '<label for="demo-email" style="margin-top:22px">E-mail da conta de demonstração</label>' +
+        '<input id="demo-email" type="email" inputmode="email" autocomplete="username" placeholder="aluno.demo@cpa.marcosfc.site" value="' + esc(L.email) + '" required aria-describedby="login-erro">' +
+        '<label for="demo-senha">Senha</label>' +
+        '<input id="demo-senha" type="password" autocomplete="current-password" required aria-describedby="login-erro">' +
+        '<p class="erro" id="login-erro" role="alert" aria-live="assertive"></p>' +
+        '<button type="submit" id="btn-senha">Entrar</button>' +
+        '<p class="demo-contas">Contas: <code>aluno.demo</code>, <code>coord.demo</code>, <code>avaliador.demo</code> e <code>admin.demo</code>, todas <code>@cpa.marcosfc.site</code>.</p>' +
+        '<div class="linha-reenvio"><span></span><button type="button" class="link" data-act="login-codigo">Voltar para o código por e-mail</button></div>' +
+        '</form>';
+    } else if (L.etapa === 'codigo') {
       var caixas = '';
       for (var i = 0; i < 6; i++) {
         caixas += '<input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" ' + (i === 0 ? 'autocomplete="one-time-code" ' : 'autocomplete="off" ') +
@@ -478,13 +500,17 @@
         '<p class="erro" id="login-erro" role="alert" aria-live="assertive"></p>' +
         '<button type="submit" id="btn-codigo">Receber código</button>' +
         '<p class="publico">Sem login você já pode ver o <a href="#mural">mural de devolutivas</a> e os <a href="#relatorios">relatórios</a>.</p>' +
+        '<p class="demo-link"><button type="button" class="link" data-act="login-demo">Acesso de demonstração (avaliação do projeto)</button></p>' +
         '</form>';
     }
     return '<div class="acesso">' + form + lado + '</div>';
   }
 
   function aoMostrarLogin(mudou) {
-    if (UI.login.etapa === 'codigo') {
+    if (UI.login.etapa === 'senha') {
+      var d = $('#demo-email');
+      if (d && mudou && window.matchMedia('(min-width: 821px)').matches) d.focus();
+    } else if (UI.login.etapa === 'codigo') {
       var primeiro = $('#codigo input');
       if (primeiro) primeiro.focus();
       iniciarTimer();
@@ -521,6 +547,7 @@
   }
   function pararTimer() { if (timerReenvio) { clearInterval(timerReenvio); timerReenvio = null; } }
 
+  // Login, etapa 1: confere o formato e pede ao servidor (/api/send-code) o código por e-mail.
   async function pedirCodigo(email, btn) {
     email = String(email || '').trim().toLowerCase();
     var campo = $('#login-email');
@@ -565,6 +592,7 @@
     if (lerCodigo().length === 6) verificarCodigo();
   }
 
+  // Login, etapa 2: confirma os 6 dígitos com o Supabase Auth, que devolve a sessão.
   async function verificarCodigo() {
     var L = UI.login;
     if (L.verificando) return;
@@ -597,17 +625,61 @@
       return;
     }
 
-    S.sessao = r.data.session;
+    await concluirLogin(r.data.session, 'Código por e-mail');
+  }
+
+  // Entrada com e-mail e senha, só para as contas de demonstração da avaliação do projeto
+  async function entrarComSenha(form) {
+    var campo = $('#demo-email'), senha = $('#demo-senha');
+    var email = String(campo.value || '').trim().toLowerCase();
+    campo.removeAttribute('aria-invalid');
+    if (!RE_DEMO.test(email)) {
+      campo.setAttribute('aria-invalid', 'true'); campo.focus();
+      erroLogin('Use uma das contas de demonstração (@cpa.marcosfc.site). Alunos e equipe entram com o código por e-mail.');
+      return;
+    }
+    if (!senha.value) { senha.focus(); erroLogin('Digite a senha.'); return; }
+    if (!sb) { erroLogin('O acesso está indisponível no momento. Tente mais tarde.'); return; }
+    var btn = form.querySelector('[type=submit]');
+    ocupado(btn, true);
+    erroLogin('');
+    UI.login.email = email;
+    UI.login.verificando = true;
+    var r;
+    try {
+      r = await sb.auth.signInWithPassword({ email: email, password: senha.value });
+    } catch (e) {
+      r = { error: e };
+    }
+    UI.login.verificando = false;
+    if (r.error || !r.data || !r.data.session) {
+      ocupado(btn, false);
+      var m = String((r.error && r.error.message) || '');
+      erroLogin(/rate|too many/i.test(m) || (r.error && r.error.status === 429)
+        ? 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.'
+        : /fetch|network/i.test(m) ? 'Sem conexão com o servidor. Confira a internet e tente de novo.'
+        : 'E-mail ou senha incorretos.');
+      senha.value = ''; senha.focus();
+      return;
+    }
+    await concluirLogin(r.data.session, 'Senha (demonstração)');
+  }
+
+  // Passos comuns depois de qualquer login: perfil calculado no banco, registro do acesso
+  // e ida para os painéis.
+  async function concluirLogin(sessao, metodo) {
+    S.sessao = sessao;
     await carregarPerfil();
-    registrarAcesso();
+    registrarAcesso(metodo);
     UI.login = { etapa: 'email', email: '', liberaEm: 0, verificando: false };
     toast(temPerfil() ? 'Bem-vindo(a), ' + S.nome + '.' : 'Você entrou, mas o seu e-mail não tem perfil liberado.', temPerfil() ? 'ok' : '');
     if (location.hash === '#dashboards') render(); else location.hash = 'dashboards';
   }
 
-  function registrarAcesso() {
+  // Grava o acesso em logs_acesso (o banco confere se e-mail e perfil são mesmo os da sessão)
+  function registrarAcesso(metodo) {
     if (!sb || !S.email) return;
-    sb.from('logs_acesso').insert({ email: S.email, nome: S.nome, role: S.perfil, metodo: 'Código por e-mail' })
+    sb.from('logs_acesso').insert({ email: S.email, nome: S.nome, role: S.perfil, metodo: metodo })
       .then(function (r) { if (r.error) console.warn('Registro de acesso não gravado', r.error.message); });
   }
 
@@ -639,7 +711,11 @@
     }
     if (D.estado === 'erro') return cab + blocoFalha('os painéis', 'recarregar-dash');
     var L = D.itens.filter(function (d) { return (d.roles || []).indexOf(S.perfil) > -1 || ehCpa(); });
-    if (!L.length) return cab + blocoVazio('Nenhum painel liberado para o seu perfil.', 'Fale com a CPA se você precisa de acesso a outra pesquisa.');
+    if (!L.length) {
+      return cab + (ehCpa()
+        ? blocoVazio('Nenhum painel cadastrado.', 'Adicione o primeiro painel no formulário abaixo.') + formNovoPainel()
+        : blocoVazio('Nenhum painel liberado para o seu perfil.', 'Fale com a CPA se você precisa de acesso a outra pesquisa.'));
+    }
     if (!L.some(function (d) { return d.id === UI.dash; })) UI.dash = L[0].id;
     var cur = L.filter(function (d) { return d.id === UI.dash; })[0];
     var src = seguro(cur.url);
@@ -662,13 +738,47 @@
     h += '</section>';
 
     if (ehCpa()) {
-      h += '<details class="painel admin" style="margin-top:20px"><summary>Trocar o link deste painel</summary>' +
+      var chave = 'dash:' + cur.id;
+      h += '<details class="painel admin" style="margin-top:20px"' + (UI.confirmar === chave ? ' open' : '') + '><summary>Editar este painel</summary>' +
         '<form data-form="dash-url" data-id="' + esc(cur.id) + '" novalidate><label for="dash-url">Link de incorporação do Looker Studio</label>' +
         '<input id="dash-url" type="url" value="' + esc(cur.url) + '" placeholder="https://lookerstudio.google.com/embed/reporting/..." required>' +
         '<p class="ajuda">No Looker Studio: Compartilhar → Incorporar relatório → copie o endereço que começa com https.</p>' +
-        '<div class="acoes"><button type="submit">Salvar link</button></div></form></details>';
+        checksPerfis('dash-edit', cur.roles || []) +
+        '<p class="erro" id="dash-erro" role="alert"></p>' +
+        '<div class="acoes"><button type="submit">Salvar alterações</button>' +
+        (UI.confirmar === chave
+          ? confirmaHtml(chave, 'Remover o painel "' + esc(cur.titulo) + '"?')
+          : '<button type="button" class="perigo" data-act="pedir-confirmacao" data-chave="' + esc(chave) + '">Remover painel</button>') +
+        '</div></form></details>' + formNovoPainel();
     }
     return h;
+  }
+
+  // Caixas de seleção dos perfis que veem um painel (a CPA sempre vê todos)
+  function checksPerfis(prefixo, marcados) {
+    return '<fieldset class="perfis"><legend>Quem vê este painel (a CPA sempre vê)</legend>' +
+      [['aluno', 'Alunos'], ['coord', 'Coordenação'], ['aval', 'Avaliadores externos']].map(function (p) {
+        return '<label class="check" for="' + prefixo + '-' + p[0] + '"><input type="checkbox" id="' + prefixo + '-' + p[0] + '" value="' + p[0] + '"' +
+          (marcados.indexOf(p[0]) > -1 ? ' checked' : '') + '> ' + p[1] + '</label>';
+      }).join('') + '</fieldset>';
+  }
+
+  function lerPerfis(prefixo) {
+    var roles = ['cpa'];
+    ['aluno', 'coord', 'aval'].forEach(function (p) { var c = $('#' + prefixo + '-' + p); if (c && c.checked) roles.push(p); });
+    return roles;
+  }
+
+  function formNovoPainel() {
+    return '<details class="painel admin" style="margin-top:14px"><summary>Adicionar painel</summary>' +
+      '<form data-form="dash-novo" novalidate>' +
+      '<label for="dn-titulo">Título</label><input id="dn-titulo" maxlength="80" placeholder="Ex.: Egressos" required>' +
+      '<label for="dn-desc">Descrição</label><input id="dn-desc" maxlength="200" placeholder="Ex.: Pesquisa respondida pelos ex-alunos.">' +
+      '<label for="dn-url">Link de incorporação do Looker Studio</label><input id="dn-url" type="url" placeholder="https://lookerstudio.google.com/embed/reporting/..." required>' +
+      checksPerfis('dn', ['coord', 'aval']) +
+      '<p class="ajuda">O painel de egressos entra por aqui assim que a CPA enviar o link.</p>' +
+      '<p class="erro" id="dn-erro" role="alert"></p>' +
+      '<div class="acoes"><button type="submit" class="escuro">Adicionar painel</button></div></form></details>';
   }
 
   // ------------------------------------------------------------------
@@ -879,6 +989,7 @@
       var vencido = u.expira_em && u.expira_em < hoje();
       var acoes;
       if (proprio) acoes = '<span class="meta">Você</span>';
+      else if (u.protegido) acoes = '<span class="tag cinza" title="Acesso protegido: não pode ser alterado nem revogado pelo portal">Protegido</span>';
       else if (UI.confirmar === chave) acoes = confirmaHtml(chave, 'Revogar?', 'Revogar');
       else acoes = (avaliador ? '<button type="button" class="alt sm" data-act="reenviar-convite" data-email="' + esc(u.email) + '">Reenviar convite</button> ' : '') +
         '<button type="button" class="perigo sm" data-act="pedir-confirmacao" data-chave="' + esc(chave) + '">Revogar</button>';
@@ -897,7 +1008,7 @@
       '<form class="painel" data-form="autorizar" novalidate><h2>Autorizar e-mails</h2>' +
       '<p class="meta" style="margin-top:0">Um e-mail por linha. Coordenação usa <code>@impacta.edu.br</code>; a CPA também aceita representantes com <code>@aluno.impacta.edu.br</code>.</p>' +
       '<label for="a-emails">E-mails</label><textarea id="a-emails" rows="3" placeholder="nome.sobrenome@impacta.edu.br" required></textarea>' +
-      '<div class="duas"><div><label for="a-role">Perfil</label><select id="a-role"><option value="coord">Coordenador (vê os 4 painéis)</option><option value="cpa">Admin CPA (vê tudo e administra)</option></select></div>' +
+      '<div class="duas"><div><label for="a-role">Perfil</label><select id="a-role"><option value="coord">Coordenador (painéis da coordenação)</option><option value="cpa">Admin CPA (vê tudo e administra)</option></select></div>' +
       '<div style="display:flex;align-items:flex-end"><label class="check" for="a-convite"><input type="checkbox" id="a-convite"> Enviar convite por e-mail</label></div></div>' +
       '<p class="erro" id="a-erro" role="alert">' + esc(UI.avisoAutorizar) + '</p>' +
       '<div class="acoes"><button type="submit" class="escuro">Autorizar</button></div></form>' +
@@ -919,7 +1030,7 @@
   }
 
   function abaVisibilidade() {
-    var h = '<div class="painel"><h2>Quem vê o quê</h2><p class="meta" style="margin-top:0">A tabela segue as regras gravadas no banco. Para mudar quem vê um painel, altere a coluna <code>roles</code> da tabela <code>dashboards</code>.</p>' +
+    var h = '<div class="painel"><h2>Quem vê o quê</h2><p class="meta" style="margin-top:0">A tabela segue as regras gravadas no banco. Para mudar quem vê um painel, use <a href="#dashboards">Dashboards</a> → Editar este painel.</p>' +
       '<div class="rolar"><table><thead><tr><th>Recurso</th>' + PERFIS.map(function (p) { return '<th class="c">' + ROLE[p] + '</th>'; }).join('') + '</tr></thead><tbody>';
     S.dash.itens.forEach(function (d) {
       h += '<tr><td>Painel: ' + esc(d.titulo) + '</td>' + PERFIS.map(function (p) {
@@ -967,17 +1078,52 @@
   // ------------------------------------------------------------------
   // Ações de administração
   // ------------------------------------------------------------------
+  // Painéis (só CPA): trocar link e perfis, adicionar e remover
+  function erroUrlPainel(url) {
+    if (!/^https:\/\//i.test(url)) return 'O link precisa começar com https://';
+    if (!RE_LOOKER.test(url)) return 'Use o link de incorporação do Looker Studio (lookerstudio.google.com).';
+    return '';
+  }
+
   async function salvarUrlDash(form) {
     var id = form.getAttribute('data-id');
     var url = $('#dash-url').value.trim();
-    if (!/^https:\/\//i.test(url)) { toast('O link precisa começar com https://'); return; }
+    var roles = lerPerfis('dash-edit');
+    var err = $('#dash-erro');
+    var problema = erroUrlPainel(url);
+    if (problema) { err.textContent = problema; $('#dash-url').focus(); return; }
+    err.textContent = '';
     var btn = form.querySelector('[type=submit]');
     ocupado(btn, true);
-    var r = await sb.from('dashboards').update({ url: url }).eq('id', id).select('id');
+    var r = await sb.from('dashboards').update({ url: url, roles: roles }).eq('id', id).select('id');
     ocupado(btn, false);
-    if (r.error || !r.data || !r.data.length) { toast(msgErro(r.error, 'Você não tem permissão para alterar este painel.')); return; }
-    S.dash.itens.forEach(function (d) { if (d.id === id) d.url = url; });
-    toast('Link do painel atualizado.', 'ok');
+    if (r.error || !r.data || !r.data.length) { err.textContent = msgErro(r.error, 'Você não tem permissão para alterar este painel.'); return; }
+    S.dash.itens.forEach(function (d) { if (d.id === id) { d.url = url; d.roles = roles; } });
+    toast('Painel atualizado.', 'ok');
+    atualizar();
+  }
+
+  async function adicionarPainel(form) {
+    var titulo = $('#dn-titulo').value.trim(), desc = $('#dn-desc').value.trim(), url = $('#dn-url').value.trim();
+    var roles = lerPerfis('dn');
+    var err = $('#dn-erro');
+    if (!titulo) { err.textContent = 'Informe o título do painel.'; $('#dn-titulo').focus(); return; }
+    var problema = erroUrlPainel(url);
+    if (problema) { err.textContent = problema; $('#dn-url').focus(); return; }
+    err.textContent = '';
+    // id curto a partir do título, sem repetir os que já existem
+    var base = slug(titulo).slice(0, 40), id = base, n = 2;
+    while (S.dash.itens.some(function (d) { return d.id === id; })) id = base + '-' + (n++);
+    var ordem = S.dash.itens.reduce(function (m, d) { return Math.max(m, d.ordem || 0); }, 0) + 1;
+    var btn = form.querySelector('[type=submit]');
+    ocupado(btn, true);
+    var r = await sb.from('dashboards').insert({ id: id, titulo: titulo, descricao: desc || null, url: url, roles: roles, ordem: ordem })
+      .select('id, titulo, descricao, roles, url, ordem').single();
+    ocupado(btn, false);
+    if (r.error) { err.textContent = msgErro(r.error, 'Não foi possível adicionar o painel.'); return; }
+    S.dash.itens.push(r.data);
+    UI.dash = r.data.id;
+    toast('Painel adicionado.', 'ok');
     atualizar();
   }
 
@@ -1012,6 +1158,7 @@
     atualizar();
   }
 
+  // Envia o PDF ao Storage e cadastra o documento; se o cadastro falhar, apaga o arquivo.
   async function enviarRelatorio(form) {
     var titulo = $('#r-titulo').value.trim(), tipo = $('#r-tipo').value, data = $('#r-data').value || hoje();
     var arquivo = $('#r-arquivo').files[0];
@@ -1079,6 +1226,7 @@
     }
   }
 
+  // Libera e-mails da coordenação ou da CPA (com ou sem convite por e-mail).
   async function autorizar(form) {
     var linhas = $('#a-emails').value.split(/[\n,;\s]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
     var role = $('#a-role').value, convite = $('#a-convite').checked;
@@ -1086,15 +1234,18 @@
     err.textContent = '';
     UI.avisoAutorizar = '';
     if (!linhas.length) { err.textContent = 'Cole pelo menos um e-mail.'; return; }
-    var validos = [], invalidos = [], proprio = false;
+    var validos = [], invalidos = [], protegidos = [], proprio = false;
     linhas.forEach(function (e) {
       if (e === S.email) { proprio = true; return; }
+      if (S.usuarios.itens.some(function (u) { return u.email === e && u.protegido; })) { protegidos.push(e); return; }
       var ok = RE_IMPACTA.test(e) || (role === 'cpa' && RE_ALUNO.test(e));
       (ok ? validos : invalidos).push(e);
     });
     validos = validos.filter(function (e, i) { return validos.indexOf(e) === i; });
     if (!validos.length) {
-      err.textContent = proprio && !invalidos.length
+      err.textContent = protegidos.length && !invalidos.length
+        ? 'Este acesso é protegido e não pode ser alterado.'
+        : proprio && !invalidos.length
         ? 'Você não pode mudar o próprio perfil por aqui.'
         : 'Nenhum e-mail aceito. ' + (role === 'coord' ? 'Coordenação precisa de @impacta.edu.br.' : 'Use um e-mail da Impacta.');
       return;
@@ -1118,6 +1269,7 @@
     var aviso = [];
     if (proprio) aviso.push('O seu próprio e-mail foi ignorado (para não perder o acesso de administração).');
     if (invalidos.length) aviso.push('Ignorados (domínio não aceito): ' + invalidos.join(', ') + '.');
+    if (protegidos.length) aviso.push('Acesso protegido, não alterado: ' + protegidos.join(', ') + '.');
     if (falhas.length) aviso.push(falhas.join(' '));
     UI.avisoAutorizar = aviso.join(' ');
     err.textContent = UI.avisoAutorizar;
@@ -1168,7 +1320,7 @@
   }
 
   async function recarregarUsuarios() {
-    var r = await sb.from('usuarios_cpa').select('email, nome, role, tipo, expira_em, criado_em').order('criado_em', { ascending: false });
+    var r = await sb.from('usuarios_cpa').select('email, nome, role, tipo, expira_em, protegido, criado_em').order('criado_em', { ascending: false });
     if (r.error) { console.error(r.error); S.usuarios.estado = 'erro'; }
     else { S.usuarios.itens = r.data || []; S.usuarios.estado = 'ok'; }
     atualizar();
@@ -1207,6 +1359,13 @@
         }
         toast('Documento removido.', 'ok');
       } else toast(msgErro(r.error, 'Não foi possível remover.'));
+    } else if (tipo === 'dash') {
+      r = await sb.from('dashboards').delete().eq('id', id).select('id');
+      if (!r.error && r.data && r.data.length) {
+        S.dash.itens = S.dash.itens.filter(function (d) { return d.id !== id; });
+        if (UI.dash === id) UI.dash = null;
+        toast('Painel removido.', 'ok');
+      } else toast(msgErro(r.error, 'Não foi possível remover o painel.'));
     } else if (tipo === 'usuario') {
       if (id === S.email) { toast('Você não pode revogar o próprio acesso.'); ocupado(btn, false); return; }
       r = await sb.from('usuarios_cpa').delete().eq('email', id).select('email');
@@ -1258,6 +1417,8 @@
       case 'mural-status': alternarMural(id, alvo); break;
       case 'reenviar-convite': reenviarConvite(alvo.getAttribute('data-email'), alvo); break;
       case 'nova-mensagem': UI.contatoEnviado = false; atualizar(); var n = $('#f-msg'); if (n) n.focus(); break;
+      case 'login-demo': UI.login = { etapa: 'senha', email: '', liberaEm: 0, verificando: false }; pararTimer(); atualizar(); var de = $('#demo-email'); if (de) de.focus(); break;
+      case 'login-codigo': UI.login = { etapa: 'email', email: '', liberaEm: 0, verificando: false }; atualizar(); var le = $('#login-email'); if (le) le.focus(); break;
       case 'trocar-email': UI.login.etapa = 'email'; pararTimer(); atualizar(); var c = $('#login-email'); if (c) c.focus(); break;
       case 'reenviar-codigo':
         pedirCodigo(UI.login.email, alvo).then(function (ok) {
@@ -1280,7 +1441,9 @@
     if (f === 'email') {
       pedirCodigo($('#login-email').value, $('#btn-codigo')).then(function (ok) { if (ok) atualizar(); });
     } else if (f === 'codigo') verificarCodigo();
+    else if (f === 'senha') entrarComSenha(form);
     else if (f === 'dash-url') salvarUrlDash(form);
+    else if (f === 'dash-novo') adicionarPainel(form);
     else if (f === 'mural-novo') publicarMural(form);
     else if (f === 'rel-novo') enviarRelatorio(form);
     else if (f === 'cfg') salvarConfig(form);
@@ -1357,6 +1520,7 @@
   // ------------------------------------------------------------------
   // Início
   // ------------------------------------------------------------------
+  // Abre o portal: carrega o que é público, recupera a sessão salva e escuta login/logout.
   async function iniciar() {
     render();
     if (!sb) {

@@ -1,9 +1,15 @@
+// POST /api/convite  (Authorization: Bearer <token da sessão>)
+// { email, role: 'coord'|'cpa'|'aval', nome?, expira_em?: 'AAAA-MM-DD', enviar?: boolean }
+// Só a administração da CPA usa. Grava a pessoa em usuarios_cpa e, se pedido, manda o
+// convite por e-mail. Respostas: 200 { ok, enviado, aviso? } | 400 dados inválidos |
+// 401 sem sessão | 403 sem permissão ou acesso protegido | 500 falha ao gravar.
+
 import { supabaseAdmin } from './_lib/supabase.js';
 import { json, erro, somentePost, lerCorpo, texto, urlPortal } from './_lib/http.js';
 import { sendEmail } from './_lib/email.js';
 import { emailConvite } from './_lib/emails.js';
 import {
-  RE_EMAIL, RE_IMPACTA, RE_ALUNO, normalizarEmail, nomeDoEmail, hojeISO,
+  RE_EMAIL, RE_IMPACTA, RE_ALUNO, RE_DEMO, normalizarEmail, nomeDoEmail, hojeISO,
   buscarCadastro, cadastroValido
 } from './_lib/regras.js';
 
@@ -58,16 +64,34 @@ export default async function handler(req, res) {
       return erro(res, 400, 'Você não pode mudar o próprio perfil por aqui.');
     }
 
+    // Esta função grava com a chave de serviço (passa por cima do RLS),
+    // então repete aqui as regras de proteção do banco.
+    const alvo = await buscarCadastro(sb, email);
+    if (alvo?.protegido) {
+      return erro(res, 403, 'Este acesso é protegido e não pode ser alterado.');
+    }
+    const autorDemo = RE_DEMO.test(autor.email);
+    if (autorDemo && role === 'cpa') {
+      return erro(res, 403, 'A conta de demonstração não pode criar outro administrador.');
+    }
+
     const linha = {
       email,
       nome: nome || nomeDoEmail(email),
       role,
       tipo: role === 'aval' ? 'token' : 'sso',
       token: null,
-      expira_em: expiraEm
+      expira_em: expiraEm,
+      criado_por: alvo ? undefined : autor.email,
+      atualizado_por: autor.email
     };
     const { error: erroGravar } = await sb.from('usuarios_cpa').upsert(linha, { onConflict: 'email' });
     if (erroGravar) throw erroGravar;
+
+    // A senha da demonstração é pública: dela não sai e-mail para ninguém
+    if (enviar && autorDemo) {
+      return json(res, 200, { ok: true, enviado: false, aviso: 'Acesso salvo. Na conta de demonstração o convite por e-mail não é enviado.' });
+    }
 
     let enviado = false;
     if (enviar) {

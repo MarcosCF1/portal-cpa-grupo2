@@ -14,5 +14,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1"
+  },
+  "devDependencies": {
+    "pg": "^8.23.1",
+    "puppeteer-core": "^24.43.1"
   }
 }

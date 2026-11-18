@@ -486,3 +486,18 @@ td.nowrap { white-space: nowrap; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
   .sk { animation: none; }
 }
+
+/* Acesso de demonstração (avaliação do projeto) */
+.demo-link { margin: 14px 0 0; font-size: .84rem; text-align: center; }
+.demo-link .link { color: var(--muted); font-weight: 500; }
+.demo-contas { margin: 14px 0 0; font-size: .8rem; color: var(--muted); overflow-wrap: anywhere; }
+.demo-contas code { font-size: .78rem; }
+
+/* Perfis que veem um painel */
+fieldset.perfis { border: 0; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 22px; }
+fieldset.perfis legend { font-weight: 600; font-size: .9rem; padding: 0; margin-bottom: 2px; }
+fieldset.perfis .check { margin-top: 8px; }
+
+/* Campos longos não alargam a grade no celular */
+.grade > *, .duas > * { min-width: 0; }
+select { max-width: 100%; }
