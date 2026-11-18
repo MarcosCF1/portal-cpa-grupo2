@@ -50,10 +50,34 @@ where not exists (
 );
 
 -- Links de atendimento da página Contato
-insert into public.configuracoes (id, chat_url, meet_url, horario) values
+-- (Chat e Meet genéricos até a CPA enviar os links da sala; e-mail citado no Relatório de
+-- Autoavaliação 2025)
+insert into public.configuracoes (id, chat_url, meet_url, horario, email_cpa) values
   (1, 'https://chat.google.com', 'https://meet.google.com',
-   'Segunda a sexta, das 14h às 19h (com agendamento ou no plantão online).')
+   'Segunda a sexta, das 14h às 19h (com agendamento ou no plantão online).',
+   'cpa@impacta.edu.br')
 on conflict (id) do nothing;
+update public.configuracoes set email_cpa = 'cpa@impacta.edu.br' where id = 1 and email_cpa is null;
+
+-- Relatórios oficiais anteriores, publicados pela Impacta em account.impacta.edu.br (página da CPA).
+-- Ficam como link para o PDF oficial (não são copiados para o Storage).
+-- Data: relatórios anuais = 31/03 do ano seguinte (prazo de postagem do relatório de
+-- autoavaliação no e-MEC); Relato Institucional 2023 = data do arquivo no site oficial.
+insert into public.relatorios (titulo, tipo, data, arquivo_url) values
+  ('Relatório de Autoavaliação Institucional 2013', 'Relatório', '2014-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202013.pdf'),
+  ('Relatório de Autoavaliação Institucional 2014', 'Relatório', '2015-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202014.pdf'),
+  ('Relatório de Autoavaliação Institucional 2015', 'Relatório', '2016-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202015.pdf'),
+  ('Relatório de Autoavaliação Institucional 2016', 'Relatório', '2017-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202016.pdf'),
+  ('Relatório de Autoavaliação Institucional 2017', 'Relatório', '2018-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202017.pdf'),
+  ('Relatório de Autoavaliação Institucional 2018', 'Relatório', '2019-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202018.pdf'),
+  ('Relatório de Autoavaliação Institucional 2019', 'Relatório', '2020-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202019.pdf'),
+  ('Relatório de Autoavaliação Institucional 2020', 'Relatório', '2021-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202020.pdf'),
+  ('Relatório de Autoavaliação Institucional 2022', 'Relatório', '2023-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202022.pdf'),
+  ('Relatório de Autoavaliação Institucional 2023', 'Relatório', '2024-03-31', 'https://account.impacta.edu.br/res/files/cpa/Relatorio%20de%20Autoavaliacao%20-%20Faculdade%20Impacta%20-%202023.pdf'),
+  ('Relato Institucional 2023', 'Relatório', '2024-02-22', 'https://account.impacta.edu.br/res/files/cpa/Relato%20Institucional%20-%20Faculdade%20Impacta%20-%202023.pdf')
+on conflict (arquivo_url) do update
+  set titulo = excluded.titulo, tipo = excluded.tipo, data = excluded.data;
+
 
 -- Primeira pessoa com perfil de administração da CPA
 -- (protegida: não pode ser alterada nem apagada pela API, nem pela conta de demonstração)

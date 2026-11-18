@@ -13,12 +13,15 @@
     "upload-relatorios": "node scripts/upload-relatorios.mjs",
     "restaurar-demo": "node scripts/restaurar-demo.mjs",
     "testar:api": "node scripts/testar-api.mjs",
-    "testar:telas": "node scripts/testar-telas.mjs"
+    "testar:telas": "node scripts/testar-telas.mjs",
+    "testar:acessibilidade": "node scripts/testar-acessibilidade.mjs",
+    "testar:tarefas": "node scripts/testar-tarefas.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1"
   },
   "devDependencies": {
+    "axe-core": "^4.14.1",
     "pg": "^8.23.1",
     "puppeteer-core": "^24.43.1"
   }

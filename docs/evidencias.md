@@ -63,7 +63,9 @@ Os resultados dos testes estão em [testes.md](testes.md); os requisitos (RF/RNF
 | <a href="img/email-codigo.png"><img src="img/email-codigo.png" width="260" alt="email-codigo"></a><br>`email-codigo` · [email-convite](img/email-convite.png) · [email-contato](img/email-contato.png) | os 3 modelos de e-mail | RF02, RF12, RF16 |
 
 ### Fase 5 — Testes e validação
-- [testes.md](testes.md): resultado de cada verificação automática (API e telas), casos de erro e de borda, e o roteiro de usabilidade que a equipe ainda precisa aplicar.
+- [testes.md](testes.md): resultado de cada verificação automática (API, telas, tarefas por perfil, acessibilidade), casos de erro e de borda, e o roteiro e o formulário para a validação com pessoas, que a equipe ainda precisa aplicar.
+- [avaliacao-usabilidade.md](avaliacao-usabilidade.md): inspeção pelas 10 heurísticas de Nielsen, com severidade e correção de cada problema (feita pela equipe, sem usuários reais).
+- [acessibilidade.md](acessibilidade.md): axe-core em 37 telas (0 violações depois das correções), navegação só por teclado e Lighthouse.
 
 | Print | O que comprova | Requisito |
 |---|---|---|
@@ -74,7 +76,8 @@ Os resultados dos testes estão em [testes.md](testes.md); os requisitos (RF/RNF
 - Portal publicado em https://cpa.marcosfc.site (Vercel + Supabase).
 - [documentacao-tecnica.md](documentacao-tecnica.md): arquitetura, deploy, variáveis e como restaurar a demonstração.
 - [manual-do-usuario.md](manual-do-usuario.md): passo a passo por perfil, com prints.
-- Treinamento da CPA e acompanhamento de uso: **a realizar pela equipe** (roteiro em [testes.md](testes.md#5-a-realizar-pela-equipe)).
+- [treinamento/](treinamento/): guias rápidos por perfil ([aluno](treinamento/guia-rapido-aluno.md), [coordenação](treinamento/guia-rapido-coordenacao.md), [avaliador](treinamento/guia-rapido-avaliador.md), [administração](treinamento/guia-rapido-administracao.md)), [roteiro de treinamento de 30 minutos](treinamento/roteiro-treinamento-administracao.md) e [FAQ](treinamento/faq.md), para a CPA usar sozinha.
+- Treinamento ao vivo da CPA e acompanhamento de uso: **a realizar pela equipe** (roteiro e formulário em [testes.md](testes.md#5-validação-com-pessoas)).
 
 ## Por requisito
 
@@ -88,16 +91,17 @@ Os resultados dos testes estão em [testes.md](testes.md); os requisitos (RF/RNF
 | RF06 Gestão de painéis | 51, 52, 53 |
 | RF07 Mural público | 01, 02, 03 |
 | RF08 Administração do mural | 20-aluno-mural, 54, 55 |
-| RF09 Relatórios | 04 |
+| RF09 Relatórios (14 documentos oficiais, busca) | 04 |
 | RF10 Envio de PDF | 56, 57 |
-| RF11 Contato | 05, 06, 07, 58 |
+| RF11 Contato (Chat, Meet, e-mail da CPA, formulário) | 05, 06, 07, 58 |
 | RF12 Acessos e Perfis | 60, 61, 62, 63, 64 |
 | RF13 Demonstração | 15, 63 |
 | RF14 Acessos protegidos | 60 |
 | RF15 Histórico | 63 |
 | RF16 Mensagens | 07, 64, email-contato |
 | RNF01 Responsivo | `img/mobile/*`, 08 |
-| RNF05 Acessibilidade | 09 |
+| RNF05 Acessibilidade | 09, [acessibilidade.md](acessibilidade.md) |
+| RNF11 Usabilidade | [avaliacao-usabilidade.md](avaliacao-usabilidade.md), [testes de tarefa](testes.md#6-testes-de-tarefa) |
 | RNF07 Mensagens claras | 06, 11, 12, 14, 80 |
 | RNF10 Privacidade | 63 |
 

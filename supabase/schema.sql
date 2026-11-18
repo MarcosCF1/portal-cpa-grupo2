@@ -51,7 +51,8 @@ create table if not exists public.configuracoes (
   id        int primary key default 1 check (id = 1),
   chat_url  text,
   meet_url  text,
-  horario   text
+  horario   text,
+  email_cpa text   -- e-mail institucional da CPA (fonte: Relatório de Autoavaliação 2025)
 );
 
 create table if not exists public.logs_acesso (
@@ -89,6 +90,11 @@ alter table public.usuarios_cpa drop constraint if exists usuarios_cpa_role_chec
 alter table public.usuarios_cpa add constraint usuarios_cpa_role_check
   check (role in ('aluno','coord','cpa','aval'));
 alter table public.usuarios_cpa add column if not exists protegido boolean not null default false;
+
+alter table public.configuracoes add column if not exists email_cpa text;
+alter table public.configuracoes drop constraint if exists configuracoes_email_cpa_formato;
+alter table public.configuracoes add constraint configuracoes_email_cpa_formato
+  check (email_cpa is null or email_cpa ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
 -- Painéis só com endereço do Looker Studio (o link vira um iframe para todos os perfis)
 alter table public.dashboards drop constraint if exists dashboards_url_looker;

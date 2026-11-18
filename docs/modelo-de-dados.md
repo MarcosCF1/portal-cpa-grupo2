@@ -4,6 +4,7 @@ O banco é um Postgres no Supabase. Os arquivos que criam tudo estão em [`supab
 
 - `schema.sql`: tabelas, funções, regras de segurança (RLS) e o bucket dos PDFs. Pode ser rodado mais de uma vez.
 - `migracoes/002_demo.sql`: as mudanças da entrega final (contas de demonstração, acessos protegidos, gestão de painéis), para bancos que já tinham o `schema.sql` antigo.
+- `migracoes/003_email_cpa.sql`: coluna `email_cpa` em `configuracoes` (e-mail institucional mostrado em Contato).
 - `seed.sql`: dados iniciais (painéis, devolutivas de exemplo, links de atendimento, dono do portal e contas de demonstração).
 
 As contas de login ficam na tabela `auth.users`, que é do próprio Supabase Auth. O portal liga a pessoa logada às suas permissões pelo **e-mail** que vem no token da sessão.
@@ -67,6 +68,7 @@ erDiagram
         text chat_url
         text meet_url
         text horario
+        text email_cpa "cpa@impacta.edu.br"
         text atualizado_por
     }
     LOGS_ACESSO {
@@ -107,8 +109,8 @@ erDiagram
 | `usuarios_cpa` | Quem tem acesso além dos alunos: coordenação (`coord`), CPA (`cpa`), avaliadores externos (`aval`). | `expira_em` vazio = sem prazo. `protegido = true` para o dono do portal e as contas de demonstração. O perfil `aluno` aqui só é usado pela conta de demonstração. |
 | `dashboards` | Painéis do Looker Studio exibidos em Dashboards. | `roles` = perfis que veem o painel. `url` precisa começar com `https://lookerstudio.google.com/` ou `https://datastudio.google.com/` (regra do banco). |
 | `mural` | Devolutivas: demanda apontada na pesquisa e a resposta da área. | Leitura pública. |
-| `relatorios` | Documentos publicados (relatórios, boletins, atas). | O PDF fica no bucket `relatorios`; `arquivo_url` é o link público. Um registro por arquivo. |
-| `configuracoes` | Links do Google Chat e do Meet e o horário de atendimento. | Uma linha só (`id = 1`). |
+| `relatorios` | Documentos publicados (relatórios, boletins, atas). | `arquivo_url` é o link público: um PDF do bucket `relatorios` (enviado pela CPA) ou o PDF oficial no site da Impacta (`account.impacta.edu.br`, relatórios anteriores). Um registro por arquivo. |
+| `configuracoes` | Links do Google Chat e do Meet, horário de atendimento e e-mail da CPA. | Uma linha só (`id = 1`). `email_cpa` precisa ter formato de e-mail (regra do banco). |
 | `logs_acesso` | Histórico de entradas no portal. | Cada pessoa só grava o próprio acesso. |
 | `mensagens_contato` | Mensagens do formulário de contato. | Gravadas pelo servidor (`/api/contato`). |
 | `envios_codigo` | Controle de quantos códigos cada e-mail e cada IP pediram. | Só o servidor acessa (sem políticas = ninguém de fora lê nem escreve). |
@@ -145,4 +147,4 @@ As funções do servidor (`/api`) usam a chave de serviço, que passa por cima d
 
 ## Como aplicar
 
-Num projeto novo do Supabase, no **SQL Editor**: rode `schema.sql` e depois `seed.sql`. Num banco que já tinha a versão anterior: rode `migracoes/002_demo.sql` e depois `seed.sql`. Todos podem ser rodados de novo sem duplicar dados.
+Num projeto novo do Supabase, no **SQL Editor**: rode `schema.sql` e depois `seed.sql`. Num banco que já tinha a versão anterior: rode `migracoes/002_demo.sql`, `migracoes/003_email_cpa.sql` e depois `seed.sql`. Todos podem ser rodados de novo sem duplicar dados.

@@ -1,3 +1,14 @@
+/* Fonte de reserva com as medidas da Space Grotesk: enquanto a fonte da web carrega, o texto
+   já ocupa quase o mesmo espaço, e a página não "pula" quando ela chega. */
+@font-face {
+  font-family: "Space Grotesk Reserva";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 107.5%;
+  ascent-override: 91%;
+  descent-override: 27%;
+  line-gap-override: 0%;
+}
+
 /* Portal da CPA · Faculdade Impacta
    Identidade: Space Grotesk + JetBrains Mono, vermelho Impacta, grafite, cartões brancos. */
 
@@ -20,7 +31,7 @@
   --wip-soft: #FFF3D6;
   --err: #B3040F;
   --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sans: "Space Grotesk", "Space Grotesk Reserva", system-ui, -apple-system, "Segoe UI", sans-serif;
   --raio: 14px;
   --sombra: 0 1px 0 rgba(20, 22, 26, .03), 0 12px 30px -22px rgba(20, 22, 26, .35);
   --escala: 1;
@@ -501,3 +512,14 @@ fieldset.perfis .check { margin-top: 8px; }
 /* Campos longos não alargam a grade no celular */
 .grade > *, .duas > * { min-width: 0; }
 select { max-width: 100%; }
+
+/* E-mail institucional da CPA na página de contato */
+.email-cpa { margin: 12px 0 0; font-size: .92rem; overflow-wrap: anywhere; }
+.email-cpa a { font-weight: 600; }
+
+/* Atalho da CPA para as ferramentas de painel */
+.atalho-admin { margin: -6px 0 14px; font-size: .88rem; }
+.atalho-admin a { font-weight: 600; }
+
+/* Reserva altura para o conteúdo: o rodapé não sobe e desce enquanto a tela carrega */
+main#app { min-height: 70vh; }

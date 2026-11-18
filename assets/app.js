@@ -34,7 +34,7 @@
   var ESPERA_REENVIO = 60;
 
   var PERFIS = ['aluno', 'coord', 'cpa', 'aval'];
-  var ROLE = { aluno: 'Aluno', coord: 'Coordenador', cpa: 'Admin CPA', aval: 'Avaliador MEC', vis: 'Sem perfil' };
+  var ROLE = { aluno: 'Aluno', coord: 'Coordenador', cpa: 'Admin CPA', aval: 'Avaliador externo', vis: 'Sem perfil' };
   var ROTAS = ['login', 'dashboards', 'mural', 'relatorios', 'contato', 'acessos'];
   var TITULOS = {
     login: 'Entrar', dashboards: 'Dashboards', mural: 'Mural de devolutivas',
@@ -72,6 +72,7 @@
     dash: null,
     muralFiltro: 'Todos',
     muralBusca: '',
+    relBusca: '',
     aba: 'pessoas',
     confirmar: null,
     contatoEnviado: false,
@@ -246,7 +247,7 @@
     barra.classList.toggle('logado', logado());
     barra.classList.toggle('longa', menu().length >= 5);
     barra.innerHTML =
-      '<a class="logo" href="#' + (temPerfil() ? 'dashboards' : 'mural') + '" aria-label="Portal da CPA, página inicial"><span class="marca" aria-hidden="true"></span><span>Portal da CPA<small>Faculdade Impacta</small></span></a>' +
+      '<a class="logo" href="#' + (temPerfil() ? 'dashboards' : 'mural') + '" ><span class="marca" aria-hidden="true"></span><span>Portal da CPA<small> Faculdade Impacta</small><span class="escondido"> (página inicial)</span></span></a>' +
       '<nav class="menu" aria-label="Principal">' + htmlLinks() + '</nav>' +
       htmlFonte() +
       '<div class="quem">' + htmlQuem() + '</div>' +
@@ -314,6 +315,7 @@
     document.title = TITULOS[v] + ' · Portal da CPA – Faculdade Impacta';
 
     if (v === 'mural') renderListaMural();
+    if (v === 'relatorios') renderListaRel();
     if (v === 'login') aoMostrarLogin(mudou);
     if (v === 'acessos' && mudou) carregarAcessos();
 
@@ -357,7 +359,7 @@
 
   async function carregarConfig() {
     S.cfg.estado = 'carregando';
-    var r = await sb.from('configuracoes').select('chat_url, meet_url, horario').eq('id', 1).maybeSingle();
+    var r = await sb.from('configuracoes').select('chat_url, meet_url, horario, email_cpa').eq('id', 1).maybeSingle();
     if (r.error) { console.error(r.error); S.cfg.estado = 'erro'; return; }
     S.cfg.dados = r.data || {};
     S.cfg.estado = 'ok';
@@ -726,6 +728,7 @@
         return '<button type="button" role="tab" id="aba-' + esc(d.id) + '" aria-controls="painel-dash" aria-selected="' + (d.id === UI.dash) + '" tabindex="' + (d.id === UI.dash ? '0' : '-1') + '" data-act="dash" data-id="' + esc(d.id) + '">' + esc(d.titulo) + '</button>';
       }).join('') + '</div>';
     }
+    if (ehCpa()) h += '<p class="atalho-admin"><a href="#ferramentas-paineis" data-act="ir-ferramentas">Adicionar, editar ou remover painéis</a></p>';
     h += '<section id="painel-dash" role="tabpanel" aria-labelledby="aba-' + esc(cur.id) + '">';
     h += '<div class="dash-cab"><div><h2>' + esc(cur.titulo) + '</h2><p class="meta">' + esc(cur.descricao || '') + '</p></div></div>';
     var abrir = src ? '<a class="btn alt sm" href="' + esc(src) + '" target="_blank" rel="noopener">Abrir em nova aba</a>' : '';
@@ -739,7 +742,7 @@
 
     if (ehCpa()) {
       var chave = 'dash:' + cur.id;
-      h += '<details class="painel admin" style="margin-top:20px"' + (UI.confirmar === chave ? ' open' : '') + '><summary>Editar este painel</summary>' +
+      h += '<details class="painel admin" id="ferramentas-paineis" style="margin-top:20px"' + (UI.confirmar === chave ? ' open' : '') + '><summary>Editar este painel</summary>' +
         '<form data-form="dash-url" data-id="' + esc(cur.id) + '" novalidate><label for="dash-url">Link de incorporação do Looker Studio</label>' +
         '<input id="dash-url" type="url" value="' + esc(cur.url) + '" placeholder="https://lookerstudio.google.com/embed/reporting/..." required>' +
         '<p class="ajuda">No Looker Studio: Compartilhar → Incorporar relatório → copie o endereço que começa com https.</p>' +
@@ -885,23 +888,47 @@
     if (R.estado === 'erro') return h + blocoFalha('os relatórios', 'recarregar-rels');
     if (!R.itens.length) return h + blocoVazio('Nenhum documento publicado ainda.', 'Os relatórios da CPA aparecem aqui assim que forem enviados.');
 
-    h += '<div class="painel lista">';
-    R.itens.forEach(function (r, i) {
+    h += '<div class="filtros"><div class="busca">' + ICONE.busca + '<label for="busca-rel" class="escondido">Buscar documento por título ou ano</label>' +
+      '<input id="busca-rel" type="search" placeholder="Buscar por título ou ano (ex.: 2019)" value="' + esc(UI.relBusca) + '" autocomplete="off"></div></div>' +
+      '<p class="escondido" id="rel-contagem" aria-live="polite"></p>' +
+      '<div id="rel-lista"></div>';
+    return h;
+  }
+
+  // Lista de documentos filtrada pela busca (redesenha só a lista, sem perder o que foi digitado)
+  function renderListaRel() {
+    var caixa = $('#rel-lista');
+    if (!caixa) return;
+    var q = UI.relBusca.trim().toLowerCase();
+    var lista = S.rels.itens.filter(function (r) {
+      // busca no título e no tipo (o ano de referência faz parte do título)
+      return !q || (r.titulo + ' ' + r.tipo).toLowerCase().indexOf(q) > -1;
+    });
+    var cont = $('#rel-contagem');
+    if (cont) cont.textContent = plural(lista.length, 'documento encontrado', 'documentos encontrados');
+    if (!lista.length) {
+      caixa.innerHTML = blocoVazio('Nenhum documento encontrado.', 'Tente outra palavra ou outro ano.');
+      return;
+    }
+    var h = '<div class="painel lista">';
+    lista.forEach(function (r, i) {
       var url = seguro(r.arquivo_url);
       var chave = 'rel:' + r.id;
-      var botoes = url
-        ? '<a class="btn sm" href="' + esc(linkDownload(url)) + '" download>Baixar PDF</a><a class="btn alt sm" href="' + esc(url) + '" target="_blank" rel="noopener">Abrir<span class="escondido"> ' + esc(r.titulo) + ' em nova aba</span></a>'
-        : '<span class="meta">Arquivo indisponível</span>';
+      var externo = url && !caminhoNoBucket(url);
+      var botoes = !url ? '<span class="meta">Arquivo indisponível</span>'
+        : externo
+        ? '<a class="btn sm" href="' + esc(url) + '" target="_blank" rel="noopener">Abrir PDF<span class="escondido"> ' + esc(r.titulo) + ' no site da Impacta, em nova aba</span></a>'
+        : '<a class="btn sm" href="' + esc(linkDownload(url)) + '" download>Baixar PDF<span class="escondido"> ' + esc(r.titulo) + '</span></a><a class="btn alt sm" href="' + esc(url) + '" target="_blank" rel="noopener">Abrir<span class="escondido"> ' + esc(r.titulo) + ' em nova aba</span></a>';
       if (ehCpa()) {
         botoes = UI.confirmar === chave
           ? confirmaHtml(chave, 'Remover o documento e o arquivo?')
           : botoes + '<button type="button" class="perigo sm" data-act="pedir-confirmacao" data-chave="' + chave + '">Remover</button>';
       }
       h += '<div class="doc" style="--i:' + Math.min(i, 8) + '"><span class="pdf" aria-hidden="true">PDF</span>' +
-        '<div><strong>' + esc(r.titulo) + '</strong><div class="meta"><span class="tag">' + esc(r.tipo) + '</span><span>Publicado em ' + fmt(r.data) + '</span></div></div>' +
+        '<div><strong>' + esc(r.titulo) + '</strong><div class="meta"><span class="tag">' + esc(r.tipo) + '</span><span>Publicado em ' + fmt(r.data) + '</span>' + (externo ? '<span>Site oficial da Impacta</span>' : '') + '</div></div>' +
         '<div class="botoes">' + botoes + '</div></div>';
     });
-    return h + '</div>';
+    caixa.innerHTML = h + '</div>';
   }
 
   // ------------------------------------------------------------------
@@ -910,6 +937,7 @@
   function vContato() {
     var C = S.cfg.dados || {};
     var chat = seguro(C.chat_url), meet = seguro(C.meet_url);
+    var emailCpa = RE_EMAIL.test(String(C.email_cpa || '')) ? String(C.email_cpa) : '';
     var h = '<p class="olho">Atendimento</p><h1>Contato com a CPA</h1>' +
       '<p class="lead">Dúvidas sobre a pesquisa, sugestões ou críticas: fale com a equipe da Comissão Própria de Avaliação.</p><div class="grade g2">';
 
@@ -925,12 +953,16 @@
           (meet ? '<a class="btn alt" href="' + esc(meet) + '" target="_blank" rel="noopener">Entrar na sala do Meet</a>' : '') + '</div>'
         : '<p class="meta">Os links de atendimento ainda não foram cadastrados.</p>';
       h += '<p class="ajuda" style="margin-top:14px">Chat e Meet abrem com a sua conta Google Impacta.</p>';
+      if (emailCpa) {
+        h += '<p class="email-cpa">E-mail da CPA: <a href="mailto:' + esc(emailCpa) + '">' + esc(emailCpa) + '</a></p>';
+      }
     }
     if (ehCpa() && S.cfg.estado === 'ok') {
       h += '<form class="separa" data-form="cfg" novalidate><h3>Editar atendimento</h3>' +
         '<label for="c-chat">Link do Google Chat</label><input id="c-chat" type="url" value="' + esc(C.chat_url || '') + '" placeholder="https://chat.google.com/...">' +
         '<label for="c-meet">Link do Google Meet</label><input id="c-meet" type="url" value="' + esc(C.meet_url || '') + '" placeholder="https://meet.google.com/...">' +
         '<label for="c-hor">Horário de atendimento</label><input id="c-hor" maxlength="200" value="' + esc(C.horario || '') + '">' +
+        '<label for="c-email">E-mail da CPA</label><input id="c-email" type="email" maxlength="254" value="' + esc(C.email_cpa || '') + '" placeholder="cpa@impacta.edu.br">' +
         '<p class="erro" id="c-erro" role="alert"></p>' +
         '<div class="acoes"><button type="submit" class="sm">Salvar</button></div></form>';
     }
@@ -982,7 +1014,7 @@
     if (S.usuarios.estado === 'carregando' || S.usuarios.estado === 'ocioso') return skFilas(3);
     if (S.usuarios.estado === 'erro') return blocoFalha('a lista', 'recarregar-acessos');
     if (!lista.length) return blocoVazio(avaliador ? 'Nenhum avaliador cadastrado.' : 'Ninguém autorizado ainda.', avaliador ? 'Use o formulário acima para convidar a comissão do MEC.' : 'Autorize os e-mails da coordenação e da CPA no formulário acima.');
-    var h = '<div class="rolar"><table><thead><tr><th>Nome</th><th>E-mail</th>' + (avaliador ? '<th>Validade</th>' : '<th>Perfil</th>') + '<th><span class="escondido">Ações</span></th></tr></thead><tbody>';
+    var h = '<div class="rolar" tabindex="0" role="region" aria-label="Tabela (role para o lado se precisar)"><table><thead><tr><th>Nome</th><th>E-mail</th>' + (avaliador ? '<th>Validade</th>' : '<th>Perfil</th>') + '<th><span class="escondido">Ações</span></th></tr></thead><tbody>';
     lista.forEach(function (u) {
       var chave = 'usuario:' + u.email;
       var proprio = u.email === S.email;
@@ -1031,7 +1063,7 @@
 
   function abaVisibilidade() {
     var h = '<div class="painel"><h2>Quem vê o quê</h2><p class="meta" style="margin-top:0">A tabela segue as regras gravadas no banco. Para mudar quem vê um painel, use <a href="#dashboards">Dashboards</a> → Editar este painel.</p>' +
-      '<div class="rolar"><table><thead><tr><th>Recurso</th>' + PERFIS.map(function (p) { return '<th class="c">' + ROLE[p] + '</th>'; }).join('') + '</tr></thead><tbody>';
+      '<div class="rolar" tabindex="0" role="region" aria-label="Tabela (role para o lado se precisar)"><table><thead><tr><th>Recurso</th>' + PERFIS.map(function (p) { return '<th class="c">' + ROLE[p] + '</th>'; }).join('') + '</tr></thead><tbody>';
     S.dash.itens.forEach(function (d) {
       h += '<tr><td>Painel: ' + esc(d.titulo) + '</td>' + PERFIS.map(function (p) {
         var ok = (d.roles || []).indexOf(p) > -1 || p === 'cpa';
@@ -1050,7 +1082,7 @@
     if (L.estado === 'carregando' || L.estado === 'ocioso') return h + skFilas(4) + '</section>';
     if (L.estado === 'erro') return h + blocoFalha('o histórico', 'recarregar-logs') + '</section>';
     if (!L.itens.length) return h + blocoVazio('Nenhum acesso registrado ainda.', '') + '</section>';
-    h += '<div class="rolar"><table><thead><tr><th>Quando</th><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Como entrou</th></tr></thead><tbody>';
+    h += '<div class="rolar" tabindex="0" role="region" aria-label="Tabela (role para o lado se precisar)"><table><thead><tr><th>Quando</th><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Como entrou</th></tr></thead><tbody>';
     L.itens.forEach(function (l) {
       h += '<tr><td class="nowrap">' + fmtDataHora(l.acessado_em) + '</td><td>' + esc(l.nome || '–') + '</td><td class="quebra">' + esc(l.email) + '</td>' +
         '<td><span class="tag cinza">' + esc(ROLE[l.role] || l.role || '–') + '</span></td><td>' + esc(l.metodo || '–') + '</td></tr>';
@@ -1191,12 +1223,14 @@
 
   async function salvarConfig(form) {
     var chat = $('#c-chat').value.trim(), meet = $('#c-meet').value.trim(), hor = $('#c-hor').value.trim();
+    var emailCpa = $('#c-email').value.trim().toLowerCase();
     var err = $('#c-erro');
     if ((chat && !/^https:\/\//i.test(chat)) || (meet && !/^https:\/\//i.test(meet))) { err.textContent = 'Os links precisam começar com https://'; return; }
+    if (emailCpa && !RE_EMAIL.test(emailCpa)) { err.textContent = 'Informe um e-mail válido para a CPA.'; $('#c-email').focus(); return; }
     err.textContent = '';
     var btn = form.querySelector('[type=submit]');
     ocupado(btn, true);
-    var dados = { chat_url: chat || null, meet_url: meet || null, horario: hor || null };
+    var dados = { chat_url: chat || null, meet_url: meet || null, horario: hor || null, email_cpa: emailCpa || null };
     var r = await sb.from('configuracoes').update(dados).eq('id', 1).select('id');
     ocupado(btn, false);
     if (r.error || !r.data || !r.data.length) { err.textContent = msgErro(r.error, 'Não foi possível salvar.'); return; }
@@ -1386,7 +1420,9 @@
 
   function mostrarConfirmacao(chave) {
     UI.confirmar = chave;
-    if (UI.view === 'mural') renderListaMural(); else atualizar();
+    if (UI.view === 'mural') renderListaMural();
+    else if (UI.view === 'relatorios') renderListaRel();
+    else atualizar();
     var b = $('[data-act="confirmar"]');
     if (b) b.focus();
   }
@@ -1411,8 +1447,13 @@
       case 'dash': UI.dash = id; atualizar(); var aba = $('#aba-' + id); if (aba) aba.focus(); break;
       case 'filtro': UI.muralFiltro = id; $$('[data-act="filtro"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === alvo)); }); renderListaMural(); break;
       case 'aba': UI.aba = id; UI.confirmar = null; UI.avisoAutorizar = ''; atualizar(); var a2 = $('#aba-' + id); if (a2) a2.focus(); break;
+      case 'ir-ferramentas':
+        ev.preventDefault();
+        var fp = $('#ferramentas-paineis');
+        if (fp) { fp.open = true; fp.scrollIntoView({ behavior: 'smooth', block: 'start' }); var cu = $('#dash-url'); if (cu) cu.focus({ preventScroll: true }); }
+        break;
       case 'pedir-confirmacao': mostrarConfirmacao(alvo.getAttribute('data-chave')); break;
-      case 'cancelar': UI.confirmar = null; if (UI.view === 'mural') renderListaMural(); else atualizar(); break;
+      case 'cancelar': UI.confirmar = null; if (UI.view === 'mural') renderListaMural(); else if (UI.view === 'relatorios') renderListaRel(); else atualizar(); break;
       case 'confirmar': confirmar(alvo.getAttribute('data-chave'), alvo); break;
       case 'mural-status': alternarMural(id, alvo); break;
       case 'reenviar-convite': reenviarConvite(alvo.getAttribute('data-email'), alvo); break;
@@ -1455,6 +1496,7 @@
   document.addEventListener('input', function (ev) {
     var t = ev.target;
     if (t.id === 'busca-mural') { UI.muralBusca = t.value; renderListaMural(); return; }
+    if (t.id === 'busca-rel') { UI.relBusca = t.value; renderListaRel(); return; }
     if (t.closest && t.closest('#codigo')) {
       var digitos = t.value.replace(/\D/g, '');
       var i = parseInt(t.getAttribute('data-i'), 10);
@@ -1467,6 +1509,11 @@
         if (lerCodigo().length === 6) verificarCodigo();
       }
     }
+  });
+
+  // Ao escolher outro arquivo, apaga o erro do arquivo anterior
+  document.addEventListener('change', function (ev) {
+    if (ev.target.id === 'r-arquivo') { var e = $('#r-erro'); if (e) e.textContent = ''; }
   });
 
   document.addEventListener('paste', function (ev) {
