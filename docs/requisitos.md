@@ -26,9 +26,9 @@ Para a avaliação do projeto existem também contas de demonstração (`@cpa.ma
 | RF06 | A CPA adiciona, edita (link e perfis que veem) e remove painéis pela própria tela, sem mexer no código. | equipe | pronto |
 | RF07 | Mural de devolutivas público, com busca por palavra e filtro por situação (resolvida / em andamento). | edital | pronto |
 | RF08 | A CPA publica devolutivas, alterna a situação e remove devolutivas. | edital | pronto |
-| RF09 | Área de relatórios e boletins pública, com leitura e download dos PDFs. | edital | pronto |
+| RF09 | Área de relatórios e boletins pública, com leitura e download dos PDFs e busca por título ou ano. Inclui os relatórios oficiais anteriores (autoavaliação 2013–2025, trienal 2022–2024, Relato Institucional 2023, Projeto 2025–2027). | edital | pronto |
 | RF10 | A CPA envia documentos em PDF (até 50 MB) e remove documentos (o arquivo também é apagado). | edital | pronto |
-| RF11 | Página de contato com links do Google Chat e do Google Meet, horário de atendimento e formulário de mensagem; a CPA edita os links e o horário. | edital | pronto (os links reais de Chat/Meet dependem da CPA) |
+| RF11 | Página de contato com links do Google Chat e do Google Meet, horário de atendimento, e-mail institucional da CPA (cpa@impacta.edu.br, citado no Relatório de Autoavaliação 2025) e formulário de mensagem; a CPA edita links, horário e e-mail. | edital | pronto (os links reais de Chat/Meet dependem da CPA) |
 | RF12 | Tela "Acessos e Perfis" (só CPA): autorizar e-mails da coordenação e da CPA, convidar avaliador externo por e-mail, revogar acessos, ver quem vê o quê, histórico dos últimos acessos e mensagens recebidas. | equipe | pronto |
 | RF13 | Contas de demonstração com e-mail e senha para a avaliação do projeto. A conta de administração de demonstração não cria outro administrador, não envia e-mails de convite e só vê o histórico e as mensagens das próprias contas de demonstração. | equipe | pronto |
 | RF14 | Acessos protegidos (dono do portal e contas de demonstração) não podem ser alterados nem revogados por ninguém pelo portal ou pela API. | equipe | pronto |
@@ -43,12 +43,14 @@ Para a avaliação do projeto existem também contas de demonstração (`@cpa.ma
 | RNF02 | Segurança do controle de acesso no servidor, não no navegador. | perfil calculado no banco (`meu_perfil()`) e regras RLS em todas as tabelas ([modelo de dados](modelo-de-dados.md)) |
 | RNF03 | Nenhum segredo no navegador ou no repositório. | só a chave pública (anon) fica em `assets/config.js`; a chave de serviço e a do Resend ficam nas variáveis da Vercel |
 | RNF04 | Proteção contra abuso. | até 3 códigos por e-mail a cada 10 min (e 60 por IP), 5 mensagens de contato por e-mail por hora, campo-armadilha contra robôs, cadastro público desligado no Supabase |
-| RNF05 | Acessibilidade. | navegação por teclado, foco visível, `aria-*` nas abas e mensagens, link "Pular para o conteúdo", botões A-/A+ para o tamanho da letra, contraste da identidade visual |
+| RNF05 | Acessibilidade. | navegação por teclado, foco visível, `aria-*` nas abas e mensagens, link "Pular para o conteúdo", botões A-/A+, contraste. **Resultado em 18/11/2026:** axe-core sem nenhuma violação em todas as telas (1366 e 390 px); navegação só por teclado OK em login, mural, contato, dashboards e menu do celular; Lighthouse Acessibilidade 100 no mural e no login ([acessibilidade.md](acessibilidade.md)) |
 | RNF06 | Identidade visual da Impacta. | cores e fontes de [identidade-visual.md](identidade-visual.md) |
 | RNF07 | Mensagens em português simples e erros explicados para a pessoa. | todas as mensagens de erro do Supabase são traduzidas na tela |
 | RNF08 | Disponibilidade e custo baixo. | site estático + funções na Vercel e banco no Supabase, nos planos gratuitos |
 | RNF09 | Manutenção documentada. | [documentação técnica](documentacao-tecnica.md), [manual do usuário](manual-do-usuario.md) e comentários nas funções principais |
 | RNF10 | Privacidade: dados pessoais visíveis só para quem precisa. | e-mails autorizados, histórico de acessos e mensagens só para a CPA; a demonstração não vê dados de pessoas reais |
+| RNF11 | Usabilidade. | inspeção heurística (10 heurísticas de Nielsen) com todos os problemas de severidade 2 ou mais corrigidos ou mitigados ([avaliacao-usabilidade.md](avaliacao-usabilidade.md)) e testes de tarefa automatizados por perfil ([testes.md](testes.md#6-testes-de-tarefa)); teste com pessoas ainda a fazer |
+| RNF12 | Cabeçalhos de segurança. | CSP, HSTS, `X-Frame-Options`, `nosniff`, `Referrer-Policy` e `Permissions-Policy` ([documentação técnica, seção 9](documentacao-tecnica.md#9-segurança-o-que-protege-o-quê)) |
 
 ## Matriz de permissões (perfil × recurso)
 

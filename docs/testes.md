@@ -5,10 +5,16 @@ Plano e resultado dos testes do Portal da CPA, rodados no portal publicado (http
 | Bateria | Como rodar | Resultado em 18/11/2026 |
 |---|---|---|
 | API: permissões, segurança e casos de erro | `npm run testar:api` ([scripts/testar-api.mjs](../scripts/testar-api.mjs)) | **104 de 104 OK** (sem `--com-email`; uma rodada anterior, com `--com-email` e antes do teste do acesso liberado pela demonstração, também passou inteira) |
-| Telas no navegador (Edge, 1366 px e 390 px), prints e erros de JavaScript | `npm run testar:telas` ([scripts/testar-telas.mjs](../scripts/testar-telas.mjs)) | **188 de 188 OK** (inclui 0 erros de JavaScript e 0 telas com rolagem horizontal em 390 px) |
-| Sintaxe de todos os `.js`/`.mjs` | `npm run check` | **15 de 15 arquivos OK** |
+| Telas no navegador (Edge, 1366 px e 390 px), prints e erros de JavaScript | `npm run testar:telas` ([scripts/testar-telas.mjs](../scripts/testar-telas.mjs)) | **198 de 198 OK** (inclui 0 erros de JavaScript e 0 telas com rolagem horizontal em 390 px) |
+| Testes de tarefa por perfil (cliques, campos, tempo) | `npm run testar:tarefas` ([scripts/testar-tarefas.mjs](../scripts/testar-tarefas.mjs)) | **12 de 12 tarefas concluídas** (seção 6) |
+| Acessibilidade: axe-core em todas as telas + só teclado | `npm run testar:acessibilidade` ([scripts/testar-acessibilidade.mjs](../scripts/testar-acessibilidade.mjs)) | **61 de 61 OK**, 0 violações do axe (seção 7) |
+| Lighthouse (mural e login) | `npx lighthouse` | Acessibilidade, Boas práticas e SEO **100** nas 4 medições; Desempenho 85–98 (seção 7) |
+| Inspeção heurística (Nielsen) | feita pela equipe | 13 problemas; todos os de severidade ≥ 2 corrigidos ou mitigados ([avaliacao-usabilidade.md](avaliacao-usabilidade.md)) |
+| Sintaxe de todos os `.js`/`.mjs` | `npm run check` | **17 de 17 arquivos OK** |
 
-Os dois scripts entram pelas contas de demonstração, criam só dados de teste e apagam tudo no final. Não enviam e-mails: o envio do código e o do formulário de contato nas telas são simulados no navegador, e a bateria da API só manda uma mensagem de contato real com `--com-email` (foi usado uma vez, em 18/11, e gerou 1 e-mail para a caixa da CPA). Onde um teste depende do envio de e-mail, a conferência real foi feita pela API do Supabase (código errado, senha errada).
+**Método:** tudo nesta página foi feito pela equipe de desenvolvimento, com scripts automatizados no navegador (Edge sem interface) e inspeção das telas. **Nenhum teste foi feito com alunos, coordenadores, avaliadores ou membros da CPA**; o que depende dessas pessoas está na seção 5, com roteiro e formulário prontos.
+
+Os scripts entram pelas contas de demonstração, criam só dados de teste e apagam tudo no final. Não enviam e-mails: o envio do código e o do formulário de contato nas telas são simulados no navegador, e a bateria da API só manda uma mensagem de contato real com `--com-email` (foi usado uma vez, em 18/11, e gerou 1 e-mail para a caixa da CPA). Onde um teste depende do envio de e-mail, a conferência real foi feita pela API do Supabase (código errado, senha errada).
 
 Legenda: **OK** = passou na data indicada.
 
@@ -19,6 +25,9 @@ Legenda: **OK** = passou na data indicada.
 |---|---|
 | Lê o mural, com resumo, filtro "Resolvidas" e busca (sem resultado mostra "Nada encontrado") | OK |
 | Lê os 3 relatórios oficiais; o PDF público abre (HTTP 200) | OK |
+| Relatórios lista os 14 documentos oficiais; os 11 anteriores (2013–2023 e Relato Institucional 2023) abrem o PDF oficial da Impacta em nova aba | OK |
+| Busca em Relatórios por ano ("2019") mostra só o Relatório de Autoavaliação Institucional 2019 | OK |
+| Contato mostra o e-mail da CPA com link `mailto:cpa@impacta.edu.br` | OK |
 | Página de contato mostra horário, Chat e Meet; formulário vazio mostra erro; envio mostra confirmação | OK |
 | Não vê nenhum painel (consulta a `dashboards` volta vazia) | OK |
 | Não aparece "Dashboards" nem "Acessos e Perfis" no menu | OK |
@@ -50,6 +59,7 @@ Legenda: **OK** = passou na data indicada.
 | Verificação | Resultado |
 |---|---|
 | Vê os 4 painéis e o menu "Acessos e Perfis" | OK |
+| Atalho "Adicionar, editar ou remover painéis" abre as ferramentas e leva o foco ao campo do link | OK |
 | **Painéis**: adiciona "Painel de teste" pela tela (vira aba nova; gravado com perfis cpa, coord, aval); coordenação vê, aluno não vê; edita link e perfis; remove com confirmação | OK |
 | Painel com link sem `https` é recusado na tela e no banco | OK |
 | Painel com link fora do Looker Studio é recusado na tela e no banco | OK |
@@ -87,6 +97,9 @@ Legenda: **OK** = passou na data indicada.
 | Storage recusa PDF acima de 50 MB (arquivo de 51 MB) | OK |
 | `GET` em `/api/send-code` → 405 | OK |
 | Nenhum segredo no repositório (só a chave pública em `assets/config.js`) e nenhum erro de JavaScript em todas as telas testadas | OK |
+| Cabeçalhos HTTP em produção: `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` | OK (conferido com `curl -I` em 18/11) |
+| A CSP não bloqueia nada do portal: login, Supabase, fontes, iframe do Looker, redirecionamento de `cpa.html` (0 avisos de CSP no console; baterias de telas e de acessibilidade sem erros de console) | OK |
+| Limites de uso (rate limits): 3 códigos por e-mail e 60 por IP a cada 10 min; 5 mensagens de contato por e-mail por hora; tentativas de login com senha limitadas pelo Supabase Auth | OK para os dois primeiros (seção 3); o limite do Supabase Auth não foi forçado de propósito |
 
 ## 3. Casos de erro e de borda
 
@@ -132,30 +145,94 @@ Correções feitas durante esta rodada:
 
 Todas as telas da seção 1 foram abertas em 390 × 844 (celular) e conferidas pelo script: a largura da página nunca passou de 390 px (sem rolagem horizontal). Prints em [`img/mobile/`](img/mobile).
 
-## 5. A realizar pela equipe
+## 5. Validação com pessoas
 
-Os itens abaixo dependem de pessoas e **ainda não foram feitos**. Ficam com um roteiro sugerido.
+### O que já foi feito sem depender de pessoas
 
-### Usabilidade com alunos, coordenadores e avaliadores (Fase 5)
-- Participantes: 3 a 5 alunos (presencial e EAD), 2 coordenadores e, se possível, 1 membro da CPA no papel de avaliador externo.
-- Tarefas (cronometrar e anotar onde a pessoa travou):
-  1. Achar no mural o que foi feito sobre a biblioteca.
-  2. Baixar o Relatório de Autoavaliação 2025.
-  3. Entrar no portal com o próprio e-mail e abrir o painel do seu público.
-  4. Mandar uma dúvida para a CPA pelo formulário.
-  5. (Coordenação) Abrir o painel Professores.
-- Ao final: nota de 1 a 5 para "foi fácil" e uma pergunta aberta ("o que mudaria?").
-- Registrar as respostas numa planilha na pasta da equipe e as correções numa nova versão.
+| Atividade | Método | Onde está |
+|---|---|---|
+| Inspeção de usabilidade | 10 heurísticas de Nielsen, tela por tela e perfil por perfil, com severidade 0–4; problemas de severidade 2 ou mais corrigidos | [avaliacao-usabilidade.md](avaliacao-usabilidade.md) |
+| Testes de tarefa | 5 cenários realistas por perfil, executados por script no navegador como um usuário faria (só cliques e digitação), em 1366 e 390 px | seção 6 |
+| Acessibilidade | axe-core em todas as telas, navegação só por teclado, contraste, Lighthouse | seção 7 e [acessibilidade.md](acessibilidade.md) |
+| Material de treinamento | guias rápidos por perfil, roteiro de 30 minutos com exercícios usando as contas de demonstração, FAQ | [treinamento/](treinamento/) |
 
-### Validação com a CPA
-- Apresentar ao Presidente da CPA o portal com a conta de administração real.
-- Conferir: perfis de cada painel, textos do mural, links reais de Chat e Meet, e-mail que recebe as mensagens, remetente dos e-mails.
-- Pedir o link do painel de **egressos** e cadastrá-lo (Dashboards → Adicionar painel).
+Isso **não substitui** a validação com pessoas: um script não fica em dúvida, não lê errado e já sabe onde clicar.
 
-### Treinamento da CPA (Fase 6)
-- Sessão de 30 a 40 minutos usando o [manual do usuário](manual-do-usuario.md), seção 6.
-- Roteiro: publicar e marcar uma devolutiva; enviar e remover um PDF; adicionar um painel; autorizar uma coordenadora; convidar um avaliador; ler o histórico e responder uma mensagem.
-- Combinar quem da CPA fica responsável por cada tarefa e onde pedir ajuda técnica.
+### O que continua dependendo de pessoas reais (a realizar pela equipe)
+
+1. **Sessão de usabilidade com usuários** (alunos, coordenadores e, se possível, alguém no papel de avaliador externo).
+2. **Validação formal com a CPA** (Presidente da CPA e membros que vão administrar o portal).
+3. **Treinamento ao vivo da administração da CPA** (pode usar o [roteiro de 30 minutos](treinamento/roteiro-treinamento-administracao.md)).
+4. **Teste com leitor de tela** (NVDA no computador ou TalkBack no celular) feito por uma pessoa.
+
+#### Roteiro da sessão de usabilidade (20 a 30 min por pessoa)
+- Participantes: 3 a 5 alunos (presencial e EAD), 2 coordenadores, 1 pessoa no papel de avaliador externo.
+- Antes: explicar que quem está sendo testado é o portal, não a pessoa; pedir para pensar em voz alta; não ajudar durante as tarefas.
+- Tarefas (as mesmas da seção 6, para comparar com o resultado automático):
+  1. Encontre o que foi feito sobre a biblioteca.
+  2. (Coordenação) Abra o painel de professores.
+  3. (Avaliador) Baixe o relatório trienal 2022–2024.
+  4. Mande uma dúvida para a CPA.
+  5. (Aluno) Entre no portal com o seu e-mail e abra o painel do seu público.
+- Anotar para cada tarefa: concluiu (sim / com ajuda / não), tempo, onde travou, comentário.
+- No final: nota de 1 a 5 para "foi fácil usar" e "o que você mudaria?".
+
+#### Roteiro da validação com a CPA
+- Mostrar o portal com a conta real de administração.
+- Conferir com a CPA: perfis de cada painel, devolutivas publicadas, relatórios e datas, e-mail e links de atendimento, remetente e textos dos e-mails.
+- Pedir: link do painel de egressos, links reais de Chat e Meet, quem administra o portal.
+- Registrar o aceite (ou os ajustes pedidos) no formulário abaixo.
+
+#### Formulário de registro
+
+Copie uma linha por participante ou por reunião.
+
+| Data | Atividade (usabilidade / validação CPA / treinamento / leitor de tela) | Participante (perfil, sem nome completo) | Tarefa ou item | Concluiu? (sim / com ajuda / não) | Tempo | Onde travou / o que pediu | Nota 1–5 | Ação combinada |
+|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | |
+| | | | | | | | | |
+| | | | | | | | | |
 
 ### Acompanhamento de uso
-- Olhar o histórico de acessos uma vez por semana no primeiro mês e anotar dúvidas que chegarem pelo contato.
+- Olhar o histórico de acessos uma vez por semana no primeiro mês e anotar as dúvidas que chegarem pelo contato.
+
+## 6. Testes de tarefa
+
+**Método:** script [testar-tarefas.mjs](../scripts/testar-tarefas.mjs) no portal publicado, em 18/11/2026. Cada tarefa começa na página inicial, como uma pessoa faria, e usa só cliques e digitação na tela (no celular, abrindo o menu). Contamos cliques, campos preenchidos e tempo até o resultado esperado aparecer. Nas tarefas com login, os números contam a partir de quando a pessoa já entrou; o login aparece como tarefa separada. É uma simulação automatizada, **não um teste com pessoas**: os tempos medem o portal (carregamento e resposta), não o tempo que alguém leva para ler e decidir.
+
+Critério de sucesso de cada tarefa:
+- **Devolutiva da biblioteca:** sobra um único cartão, da Biblioteca, com a resposta sobre o horário até 22h.
+- **Painel de professores:** a aba "Professores" fica selecionada e o painel carregado é o de professores.
+- **Relatório trienal:** o PDF é baixado de verdade e o arquivo começa com `%PDF-`.
+- **Publicar e enviar PDF:** a devolutiva e o documento aparecem na tela e estão gravados no banco (apagados no fim).
+- **Mensagem para a CPA:** a tela de confirmação aparece (envio simulado no navegador, sem e-mail real).
+
+| Tarefa | Perfil | Tela | Sucesso | Cliques | Campos preenchidos | Tempo (s) | Observação |
+|---|---|---|:-:|:-:|:-:|:-:|---|
+| Entrar com a conta de demonstração | aluno | 1366 px | sim | 3 | 2 | 2.6 |  |
+| Encontrar a devolutiva da biblioteca | aluno | 1366 px | sim | 1 | 1 | 1.2 | tempo e cliques contados depois do login |
+| Abrir o painel de professores | coordenação | 1366 px | sim | 1 | 0 | 0.3 | tempo e cliques contados depois do login; o conteúdo do Looker depende da conta Google |
+| Baixar o relatório trienal | avaliador externo | 1366 px | sim | 2 | 0 | 3.2 | arquivo salvo: relatorio-autoavaliacao-trienal-2022-2024.pdf |
+| Publicar devolutiva e enviar PDF | administração | 1366 px | sim | 6 | 5 | 4.2 | tempo e cliques contados depois do login |
+| Mandar mensagem para a CPA | visitante | 1366 px | sim | 2 | 3 | 1.4 | envio simulado no navegador (sem e-mail real) |
+| Entrar com a conta de demonstração | aluno | 390 px | sim | 4 | 2 | 3.0 |  |
+| Encontrar a devolutiva da biblioteca | aluno | 390 px | sim | 2 | 1 | 1.8 | tempo e cliques contados depois do login |
+| Abrir o painel de professores | coordenação | 390 px | sim | 1 | 0 | 0.3 | tempo e cliques contados depois do login; o conteúdo do Looker depende da conta Google |
+| Baixar o relatório trienal | avaliador externo | 390 px | sim | 3 | 0 | 10.1 | arquivo salvo: relatorio-autoavaliacao-trienal-2022-2024.pdf |
+| Publicar devolutiva e enviar PDF | administração | 390 px | sim | 8 | 5 | 4.8 | tempo e cliques contados depois do login |
+| Mandar mensagem para a CPA | visitante | 390 px | sim | 3 | 3 | 2.0 | envio simulado no navegador (sem e-mail real) |
+
+Resultado: **12 de 12 tarefas concluídas** (6 tarefas × 2 tamanhos de tela). O tempo inclui pausas fixas do script (250 ms depois de cada clique e 300 a 600 ms depois de abrir o menu ou de uma busca); no download, depende do tamanho do PDF e da rede.
+
+Correções que os testes de tarefa e a inspeção levaram a fazer: busca em Relatórios (achar um ano entre 14 documentos), atalho para as ferramentas de painel, e-mail da CPA no contato, link de ajuda no rodapé ([avaliacao-usabilidade.md](avaliacao-usabilidade.md)).
+
+## 7. Acessibilidade
+
+Resumo (detalhes em [acessibilidade.md](acessibilidade.md)):
+
+| Verificação | Resultado |
+|---|---|
+| axe-core em 37 telas/estados (visitante e cada perfil, 1366 e 390 px) | 1ª rodada: 2 regras sérias (nome do logo, tabelas com rolagem sem foco). Corrigidas. 2ª rodada: **0 violações** de qualquer gravidade |
+| Contraste (regra `color-contrast` do axe) | OK em todas as telas |
+| Só teclado: login por código, acesso de demonstração, mural, dashboards, contato, menu do celular | OK em todas as verificações |
+| Lighthouse Acessibilidade (mural e login, celular e computador) | 100 nas 4 medições |

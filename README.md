@@ -34,7 +34,10 @@ Os painéis são do Looker Studio e só carregam com uma conta Google da Impacta
 - [Modelo de dados](docs/modelo-de-dados.md)
 - [Documentação técnica](docs/documentacao-tecnica.md) (arquitetura, login, endpoints, deploy, segurança, limites)
 - [Manual do usuário](docs/manual-do-usuario.md)
-- [Testes](docs/testes.md)
+- [Testes](docs/testes.md) (API, telas, testes de tarefa, casos de erro e roteiro de validação com pessoas)
+- [Avaliação de usabilidade (heurísticas de Nielsen)](docs/avaliacao-usabilidade.md)
+- [Acessibilidade e desempenho (axe-core, teclado, Lighthouse)](docs/acessibilidade.md)
+- [Treinamento: guias rápidos por perfil, roteiro de 30 min e FAQ](docs/treinamento/) (também em PDF, em `docs/treinamento/pdf/`)
 - [Evidências (prints por fase e por requisito)](docs/evidencias.md)
 - [Plano do projeto](docs/plano.md) · [Dashboards da CPA](docs/dashboards.md) · [Identidade visual](docs/identidade-visual.md) · [KPIs](docs/kpis-cpa.md)
 
@@ -176,6 +179,8 @@ Testes automatizados (usam o `.env.local` e o portal publicado; criam só dados 
 ```
 npm run testar:api       # permissões, segurança e casos de erro
 npm run testar:telas     # telas no navegador (Edge ou Chrome) e prints de docs/img
+npm run testar:tarefas   # tarefas por perfil (cliques, campos e tempo)
+npm run testar:acessibilidade  # axe-core em todas as telas + navegação por teclado
 npm run restaurar-demo   # volta a demonstração ao estado inicial
 ```
 

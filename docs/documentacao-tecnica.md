@@ -121,11 +121,13 @@ As demais operações (mural, relatórios, painéis, links, acessos) são feitas
 | `assets/styles.css` | visual, responsividade e acessibilidade |
 | `api/send-code.js`, `api/convite.js`, `api/contato.js` | funções do servidor (comentário no topo de cada uma explica entrada e saída) |
 | `api/_lib/` | cliente do Supabase com a chave de serviço, envio pelo Resend, modelos de e-mail, regras de e-mail e utilidades HTTP |
-| `supabase/` | `schema.sql`, `migracoes/`, `seed.sql` |
+| `supabase/` | `schema.sql`, `migracoes/` (`002_demo.sql`, `003_email_cpa.sql`), `seed.sql` |
 | `scripts/upload-relatorios.mjs` | envia os PDFs oficiais da CPA |
 | `scripts/restaurar-demo.mjs` | recria as contas de demonstração e desfaz o que elas mexeram |
 | `scripts/testar-api.mjs` | testes de permissões, segurança e erros pela API |
 | `scripts/testar-telas.mjs` | testes no navegador e prints de `docs/img` |
+| `scripts/testar-tarefas.mjs` | testes de tarefa por perfil (cliques, campos e tempo) |
+| `scripts/testar-acessibilidade.mjs` | axe-core em todas as telas e navegação por teclado |
 | `scripts/checar-sintaxe.mjs` | `node --check` em todos os arquivos `.js`/`.mjs` |
 
 ## 5. Variáveis de ambiente
@@ -153,9 +155,9 @@ O projeto na Vercel se chama `portal-cpa-impacta` e o domínio `cpa.marcosfc.sit
 npx vercel deploy --prod --yes
 ```
 
-Não há build: a Vercel publica os arquivos estáticos e transforma cada arquivo de `api/` em uma função. Cabeçalhos de segurança (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`) ficam em `vercel.json`.
+Não há build: a Vercel publica os arquivos estáticos e transforma cada arquivo de `api/` em uma função. Os cabeçalhos de segurança ficam em `vercel.json` (seção 9). A Vercel não está ligada ao GitHub: depois de juntar na `main`, o deploy é feito pelo comando acima.
 
-Mudanças no banco: rode o SQL novo no SQL Editor do Supabase (ou `node` com o `pg`, como faz `restaurar-demo.mjs`) **antes** do deploy que depende dele.
+Mudanças no banco (num banco existente, na ordem: `migracoes/002_demo.sql`, `migracoes/003_email_cpa.sql`, `seed.sql`): rode o SQL novo no SQL Editor do Supabase (ou `node` com o `pg`, como faz `restaurar-demo.mjs`) **antes** do deploy que depende dele.
 
 ## 7. Como rodar localmente
 
@@ -203,14 +205,17 @@ Além disso, acessos liberados pela conta de demonstração (criados ou alterado
 | Senha pública da demonstração | a administração de demonstração não cria administrador, não envia e-mails de convite e não vê histórico nem mensagens de pessoas reais; tudo o que ela faz pode ser desfeito por `restaurar-demo.mjs` |
 | Link malicioso em painel | o banco só aceita URLs `https://lookerstudio.google.com/` ou `https://datastudio.google.com/`; o iframe tem `sandbox` |
 | Arquivo indevido em Relatórios | bucket aceita só `application/pdf` até 50 MB; só a CPA envia |
-| Clickjacking | `X-Frame-Options: DENY` |
+| Clickjacking | `X-Frame-Options: DENY` e `frame-ancestors 'none'` na CSP |
+| Script ou conteúdo de terceiros injetado | **Content-Security-Policy**: scripts só do próprio site e do jsDelivr (biblioteca do Supabase, versão fixa) e o hash do redirecionamento de `cpa.html`; conexões só com o Supabase do projeto; quadros só do Looker/Google; `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. Testada antes de valer: login, Supabase, fontes, iframe do Looker e redirecionamento continuaram funcionando, sem nenhum bloqueio no console. Estilos inline continuam permitidos (`style-src 'unsafe-inline'`) porque as telas usam atributos `style`. |
+| Conexão sem HTTPS | `Strict-Transport-Security` (2 anos) e `upgrade-insecure-requests` |
 | XSS | todo texto vindo do banco passa por `esc()` antes de ir para a tela; links só `https` (`seguro()`) |
 
 ## 10. Limites conhecidos
 
 - **Looker Studio pede a conta Google da Impacta.** O login do portal não substitui a permissão do Looker. Sem a conta Google da Impacta no navegador (ou com cookies de terceiros bloqueados), o iframe mostra "Não é possível acessar o relatório". Avaliadores externos precisam que a CPA compartilhe o relatório com o e-mail deles ou publique uma versão com dados agregados. O botão "Abrir em nova aba" ajuda quando o navegador bloqueia cookies no iframe.
 - **Painel de egressos**: a CPA ainda não enviou o link. Quando enviar, a administração adiciona em Dashboards → "Adicionar painel" (perfis Coordenação e Avaliadores externos).
-- **Links de Chat e Meet**: hoje apontam para as páginas iniciais do Google Chat e do Meet; os links reais da sala da CPA precisam ser cadastrados em Contato → "Editar atendimento".
+- **Links de Chat e Meet**: hoje apontam para as páginas iniciais do Google Chat e do Meet; os links reais da sala da CPA precisam ser cadastrados em Contato → "Editar atendimento". O e-mail institucional **cpa@impacta.edu.br** já aparece na página; a fonte é o Relatório de Autoavaliação Institucional 2025 da Faculdade Impacta (trecho "E-MAIL da CPA", junto da composição da comissão).
+- **Relatórios anteriores**: os relatórios de autoavaliação de 2013 a 2023 e o Relato Institucional 2023 são links para os PDFs oficiais publicados pela Impacta em `account.impacta.edu.br/res/files/cpa/` (lista tirada da página da CPA no site da Impacta; cada link conferido com HEAD: 200 e `application/pdf` em 18/11/2026). Eles não foram copiados para o Storage; se a Impacta mudar os endereços, os links quebram. A página oficial não tem relatório anual de 2021 nem de 2024 (2024 está no trienal 2022–2024). A data mostrada para os anuais é 31/03 do ano seguinte (prazo de postagem do relatório de autoavaliação no e-MEC), não a data exata de publicação; a do Relato Institucional 2023 é a data do arquivo no site oficial (22/02/2024).
 - **Domínio de e-mail**: os e-mails saem pelo domínio verificado no Resend (`EMAIL_FROM`). Ao mudar para um domínio da Impacta, é preciso verificar o novo domínio no Resend.
 - **Senha da demonstração é pública** (está no README). Os dados são fictícios e a demonstração tem limites (seção 9); ainda assim, recomenda-se remover as contas depois da avaliação.
 - Limite do plano gratuito do Supabase: 50 MB por arquivo e 1 GB de Storage.

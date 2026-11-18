@@ -132,9 +132,18 @@ async function publico(modo) {
   await p.keyboard.press('Backspace');
   await ir(p, 'relatorios', '.doc');
   ok('relatórios: 3 PDFs com botões de baixar', (await p.$$('.doc a[download]')).length >= 3);
+  ok('relatórios: 14 documentos oficiais listados', (await p.$$('.doc')).length >= 14, (await p.$$('.doc')).length);
+  const ext = await p.$$eval('.doc a[href*="account.impacta.edu.br"]', (a) => a.map((x) => x.target));
+  ok('relatórios antigos abrem o PDF oficial em nova aba', ext.length >= 11 && ext.every((t) => t === '_blank'), ext.length);
   await print(p, '04-relatorios');
+  await p.type('#busca-rel', '2019');
+  await espera(300);
+  ok('relatórios: busca por ano', (await p.$$eval('.doc strong', (d) => d.map((x) => x.textContent))).join('|') === 'Relatório de Autoavaliação Institucional 2019');
+  await p.click('#busca-rel', { clickCount: 3 });
+  await p.keyboard.press('Backspace');
   await ir(p, 'contato', '#f-nome');
   ok('contato mostra horário e links', /Google Chat/.test(await texto(p)));
+  ok('contato mostra o e-mail da CPA (mailto)', !!(await p.$('.email-cpa a[href="mailto:cpa@impacta.edu.br"]')));
   await print(p, '05-contato');
   await p.click('form[data-form="contato"] [type=submit]');
   await espera(300);
@@ -244,6 +253,9 @@ async function administracao(modo) {
   await entrar(p, 'admin.demo');
   ok('vê os 4 painéis', (await abas(p)).length === 4);
   await print(p, '50-admin-dashboards', false);
+  await p.click('[data-act="ir-ferramentas"]');
+  await espera(800);
+  ok('atalho abre as ferramentas de painel e foca o link', await p.evaluate(() => document.querySelector('#ferramentas-paineis').open && document.activeElement.id === 'dash-url'));
   await p.evaluate(() => { document.querySelectorAll('details.admin').forEach((d) => { d.open = true; }); });
   await p.$eval('#dash-url', (e) => { e.value = 'http://exemplo.com/painel'; });
   await p.click('form[data-form="dash-url"] [type=submit]');

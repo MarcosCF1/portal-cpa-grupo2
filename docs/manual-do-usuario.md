@@ -17,14 +17,17 @@ Menu **Mural de devolutivas**. Cada cartão mostra a área, a demanda apontada n
 ![Mural de devolutivas](img/01-mural.png)
 
 ### Relatórios
-Menu **Relatórios**. **Baixar PDF** salva o arquivo; **Abrir** mostra o PDF numa nova aba.
+Menu **Relatórios**. Use **Buscar por título ou ano** para achar um documento (ex.: 2019). **Baixar PDF** salva o arquivo; **Abrir** mostra o PDF numa nova aba. Os relatórios de 2013 a 2023 e o Relato Institucional 2023 abrem direto no site oficial da Impacta (**Abrir PDF**).
 
 ![Relatórios](img/04-relatorios.png)
 
 ### Contato
-Menu **Contato**. À esquerda ficam o horário e os botões do Google Chat e do Google Meet (abrem com a sua conta Google Impacta). À direita, o formulário: preencha nome, e-mail e mensagem e clique **Enviar mensagem**. A resposta chega no e-mail informado.
+Menu **Contato**. À esquerda ficam o horário, os botões do Google Chat e do Google Meet (abrem com a sua conta Google Impacta) e o **e-mail da CPA** (cpa@impacta.edu.br). À direita, o formulário: preencha nome, e-mail e mensagem e clique **Enviar mensagem**. A resposta chega no e-mail informado.
 
 ![Contato](img/05-contato.png)
+
+### Ajuda
+O link **Como usar o portal**, no rodapé, abre este manual. Guias curtos por perfil e um FAQ estão em [treinamento/](treinamento/).
 
 ### Tamanho da letra e celular
 Os botões **A-** e **A+** no topo diminuem e aumentam a letra (o portal lembra a escolha). No celular, o menu fica no botão de três linhas, no canto de cima.
@@ -91,6 +94,7 @@ A CPA vê tudo o que os outros perfis veem e, em cada tela, tem quadros tracejad
 ### 6.1 Painéis (Dashboards)
 - **Editar este painel**: troque o link de incorporação e marque quem vê o painel (Alunos, Coordenação, Avaliadores externos; a CPA sempre vê). Clique **Salvar alterações**.
 - **Remover painel**: pede confirmação antes de apagar.
+- O atalho **Adicionar, editar ou remover painéis**, logo acima do painel, leva direto a essas ferramentas.
 - **Adicionar painel**: informe título, descrição, link e quem vê. O link precisa ser o de incorporação do Looker Studio (no Looker: Compartilhar → Incorporar relatório → copie o endereço que começa com `https://lookerstudio.google.com/embed/...`).
 
 O painel de **egressos** entra por aqui assim que a CPA tiver o link (marque Coordenação e Avaliadores externos).
@@ -110,7 +114,7 @@ Abra **Enviar documento**, informe título, tipo (Relatório, Boletim ou Ata), d
 ![Enviar PDF](img/56-admin-enviar-pdf.png)
 
 ### 6.4 Contato
-Em **Editar atendimento**, cadastre os links do Google Chat e do Meet (começando com `https://`) e o horário. Clique **Salvar**.
+Em **Editar atendimento**, cadastre os links do Google Chat e do Meet (começando com `https://`), o horário e o e-mail da CPA. Clique **Salvar**.
 
 ![Editar atendimento](img/58-admin-contato.png)
 
