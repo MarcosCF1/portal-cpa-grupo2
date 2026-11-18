@@ -186,7 +186,9 @@ O script (lê `.env.local`):
 3. reaplica `supabase/seed.sql`;
 4. reenvia os 3 PDFs oficiais se algum estiver faltando (pasta `../relatorios` ou `RELATORIOS_PASTA`).
 
-Não mexe no histórico de acessos nem no que contas reais fizeram. Se a conta de demonstração revogar ou mudar o perfil de uma pessoa real **não protegida**, essa pessoa precisa ser autorizada de novo. Depois da avaliação, `node scripts/restaurar-demo.mjs --remover` apaga as contas de demonstração.
+Não mexe no histórico de acessos. Atenção: a regra é "última alteração feita por conta de demonstração". Uma linha criada por uma pessoa real e depois editada pela demonstração (um painel real, uma devolutiva real, os links de atendimento) também é apagada: se estiver no `seed.sql`, volta com os valores do seed; se não estiver, some. O que a demonstração apagou de uma pessoa real não volta. Por isso as contas de demonstração devem existir só enquanto o portal tiver dados fictícios: depois da avaliação, e antes de a CPA cadastrar conteúdo real, rode `node scripts/restaurar-demo.mjs --remover` para apagar as contas.
+
+Além disso, acessos liberados pela conta de demonstração (criados ou alterados por ela) não recebem código por e-mail: `/api/send-code` responde 403. Assim a senha pública não serve para mandar e-mails a terceiros.
 
 ## 9. Segurança: o que protege o quê
 

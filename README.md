@@ -17,7 +17,7 @@ Senha das quatro contas: **`CPA-Impacta-2026`**
 | `avaliador.demo@cpa.marcosfc.site` | Avaliador externo (válido até 31/12/2027) | todos os painéis |
 | `admin.demo@cpa.marcosfc.site` | Administração (CPA) | tudo, mais: publicar e remover devolutivas, enviar e remover PDFs, adicionar, editar e remover painéis, editar links de atendimento, autorizar e revogar acessos, histórico e mensagens |
 
-Os dados são **fictícios** e podem ser mexidos à vontade: a equipe restaura tudo com `node scripts/restaurar-demo.mjs`. A conta de administração de demonstração tem alguns limites para a senha pública não virar problema: não remove o dono do portal nem as outras contas de demonstração (acessos protegidos), não cria outro administrador, não envia e-mails de convite e não vê histórico nem mensagens de pessoas reais.
+Os dados são **fictícios** e podem ser mexidos à vontade: a equipe restaura tudo com `node scripts/restaurar-demo.mjs` (e remove as contas com `--remover` antes de a CPA cadastrar conteúdo real). A conta de administração de demonstração tem alguns limites para a senha pública não virar problema: não remove o dono do portal nem as outras contas de demonstração (acessos protegidos), não cria outro administrador, não envia e-mails de convite e não vê histórico nem mensagens de pessoas reais.
 
 Os painéis são do Looker Studio e só carregam com uma conta Google da Impacta logada no navegador; sem ela aparece "Não é possível acessar o relatório" (limite do Looker, não do portal).
 

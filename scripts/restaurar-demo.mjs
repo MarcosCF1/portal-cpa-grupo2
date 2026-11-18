@@ -8,9 +8,12 @@
 // 3. Reaplica supabase/seed.sql (painéis, devolutivas, links e contas protegidas).
 // 4. Reenvia os PDFs oficiais se algum estiver faltando.
 //
-// Não mexe no histórico de acessos nem em nada feito por contas reais.
-// Atenção: se a conta de demonstração apagou ou mudou o perfil de uma pessoa real não protegida,
-// essa pessoa precisa ser autorizada de novo pela tela Acessos e Perfis.
+// Não mexe no histórico de acessos.
+// Atenção: a regra é "última alteração feita por conta de demonstração". Uma linha criada por
+// uma pessoa real e depois editada pela demonstração também é apagada (se estiver no seed,
+// volta com os valores do seed; se não estiver, some). E o que a demonstração apagou de uma
+// pessoa real não volta. Por isso as contas de demonstração devem existir só enquanto o portal
+// tiver dados fictícios: antes de entrar conteúdo real, rode com --remover.
 //
 // Uso (na pasta do projeto):
 //   node scripts/restaurar-demo.mjs            lê as variáveis do ambiente ou de .env.local / .env

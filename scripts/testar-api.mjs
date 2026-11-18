@@ -180,6 +180,9 @@ try {
   await db.query(`insert into envios_codigo (email, ip) select 'limite.teste@impacta.edu.br', 'teste' from generate_series(1,3)`);
   r = await sc('limite.teste@impacta.edu.br');
   ok('4º pedido em 10 min → 429', r.status === 429, r.dados.erro);
+  await a.from('usuarios_cpa').insert({ email: 'liberado.pela.demo@impacta.edu.br', nome: 'Liberado pela demo', role: 'coord' });
+  r = await sc('liberado.pela.demo@impacta.edu.br');
+  ok('acesso liberado pela demo não recebe e-mail → 403', r.status === 403 && r.dados.motivo === 'demo', r.dados.erro);
   const vo = await anon().auth.verifyOtp({ email: 'aluno.demo@cpa.marcosfc.site', token: '000000', type: 'email' });
   ok('código errado é recusado', !!vo.error, vo.error?.code);
   const sp = await anon().auth.signInWithPassword({ email: 'aluno.demo@cpa.marcosfc.site', password: 'senha-errada' });
@@ -212,7 +215,7 @@ try {
   ok('erro inesperado', false, e.message);
 } finally {
   // limpeza
-  await db.query(`delete from usuarios_cpa where email in ('vencido.teste@example.com','limite.teste@impacta.edu.br','avaliador.teste@example.com','coord.teste@impacta.edu.br')`);
+  await db.query(`delete from usuarios_cpa where email in ('vencido.teste@example.com','limite.teste@impacta.edu.br','avaliador.teste@example.com','coord.teste@impacta.edu.br','liberado.pela.demo@impacta.edu.br')`);
   await db.query(`delete from envios_codigo where email = 'limite.teste@impacta.edu.br'`);
   await db.query(`delete from mensagens_contato where email like '%@cpa.marcosfc.site'`);
   await db.query(`delete from logs_acesso where nome = 'Teste API'`);
