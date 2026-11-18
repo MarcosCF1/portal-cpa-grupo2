@@ -1,9 +1,15 @@
+// POST /api/send-code  { email }
+// Confere se o e-mail pode entrar no portal, limita os envios e manda por e-mail um código
+// de 6 dígitos gerado pelo Supabase Auth. O navegador confirma o código com verifyOtp.
+// Respostas: 200 { ok: true } | 400 e-mail inválido | 403 sem acesso (motivo: expirado,
+// formato, nao_autorizado ou demo) | 429 muitos pedidos | 500 falha no envio.
+
 import { supabaseAdmin } from './_lib/supabase.js';
 import { json, erro, somentePost, lerCorpo, ipDe, urlPortal } from './_lib/http.js';
 import { sendEmail } from './_lib/email.js';
 import { emailCodigo } from './_lib/emails.js';
 import {
-  RE_EMAIL, RE_ALUNO, normalizarEmail, nomeDoEmail,
+  RE_EMAIL, RE_ALUNO, RE_DEMO, normalizarEmail, nomeDoEmail,
   buscarCadastro, cadastroValido, dataBR
 } from './_lib/regras.js';
 
@@ -25,6 +31,11 @@ export default async function handler(req, res) {
   const email = normalizarEmail(corpo.email);
   if (!email || email.length > 254 || !RE_EMAIL.test(email)) {
     return erro(res, 400, 'Informe um e-mail válido.');
+  }
+
+  // As contas de demonstração não têm caixa de e-mail: entram com senha
+  if (RE_DEMO.test(email)) {
+    return erro(res, 403, 'Esta é uma conta de demonstração. Use "Acesso de demonstração", logo abaixo, com a senha informada no README.', { motivo: 'demo' });
   }
 
   try {

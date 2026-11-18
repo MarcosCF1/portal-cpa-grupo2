@@ -1,3 +1,8 @@
+// POST /api/contato  { nome, email, mensagem, site }
+// Formulário "Fale com a CPA": grava a mensagem (a CPA vê no portal) e avisa por e-mail.
+// "site" é um campo escondido (armadilha para robôs): se vier preenchido, responde ok e
+// descarta. Respostas: 200 { ok: true } | 400 dados inválidos | 429 limite por hora | 500 falha.
+
 import { supabaseAdmin } from './_lib/supabase.js';
 import { json, erro, somentePost, lerCorpo, texto, urlPortal } from './_lib/http.js';
 import { sendEmail } from './_lib/email.js';

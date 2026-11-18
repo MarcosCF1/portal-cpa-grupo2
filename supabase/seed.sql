@@ -1,5 +1,6 @@
 -- Portal da CPA - dados iniciais
 -- Rode depois do schema.sql. Pode ser executado mais de uma vez.
+-- Para voltar a demonstração ao estado inicial, use scripts/restaurar-demo.mjs.
 -- Os relatórios em PDF entram pelo script scripts/upload-relatorios.mjs.
 
 -- Dashboards do Looker Studio (dados fictícios enviados pela CPA)
@@ -55,7 +56,19 @@ insert into public.configuracoes (id, chat_url, meet_url, horario) values
 on conflict (id) do nothing;
 
 -- Primeira pessoa com perfil de administração da CPA
-insert into public.usuarios_cpa (email, nome, role, tipo) values
-  ('marcos.pires@aluno.impacta.edu.br', 'Marcos Felipe Choppick Pires', 'cpa', 'sso')
+-- (protegida: não pode ser alterada nem apagada pela API, nem pela conta de demonstração)
+insert into public.usuarios_cpa (email, nome, role, tipo, protegido) values
+  ('marcos.pires@aluno.impacta.edu.br', 'Marcos Felipe Choppick Pires', 'cpa', 'sso', true)
 on conflict (email) do update
-  set nome = excluded.nome, role = excluded.role, tipo = excluded.tipo, expira_em = null;
+  set nome = excluded.nome, role = excluded.role, tipo = excluded.tipo, expira_em = null, protegido = true;
+
+-- Contas de demonstração para a avaliação do projeto (dados fictícios).
+-- A senha é definida no Supabase Auth pelo script scripts/restaurar-demo.mjs.
+insert into public.usuarios_cpa (email, nome, role, tipo, expira_em, protegido) values
+  ('aluno.demo@cpa.marcosfc.site',     'Aluno Demonstração',         'aluno', 'sso',   null,         true),
+  ('admin.demo@cpa.marcosfc.site',     'Administração Demonstração', 'cpa',   'sso',   null,         true),
+  ('coord.demo@cpa.marcosfc.site',     'Coordenação Demonstração',   'coord', 'sso',   null,         true),
+  ('avaliador.demo@cpa.marcosfc.site', 'Avaliador Demonstração',     'aval',  'token', '2027-12-31', true)
+on conflict (email) do update
+  set nome = excluded.nome, role = excluded.role, tipo = excluded.tipo,
+      expira_em = excluded.expira_em, protegido = true;

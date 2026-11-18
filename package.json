@@ -10,9 +10,16 @@
   "scripts": {
     "dev": "vercel dev",
     "check": "node scripts/checar-sintaxe.mjs",
-    "upload-relatorios": "node scripts/upload-relatorios.mjs"
+    "upload-relatorios": "node scripts/upload-relatorios.mjs",
+    "restaurar-demo": "node scripts/restaurar-demo.mjs",
+    "testar:api": "node scripts/testar-api.mjs",
+    "testar:telas": "node scripts/testar-telas.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.1"
+  },
+  "devDependencies": {
+    "pg": "^8.23.1",
+    "puppeteer-core": "^24.43.1"
   }
 }

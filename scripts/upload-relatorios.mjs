@@ -8,10 +8,10 @@ import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-const pasta = resolve(process.argv[2] || join(raiz, '..', 'relatorios'));
+export const PASTA_PADRAO = join(raiz, '..', 'relatorios');
 const BUCKET = 'relatorios';
 
-const RELATORIOS = [
+export const RELATORIOS = [
   {
     arquivo: 'Relatorio_de_Autoavaliacao_-_Faculdade_Impacta_-_2025.pdf',
     caminho: 'oficiais/relatorio-autoavaliacao-2025.pdf',
@@ -32,60 +32,67 @@ const RELATORIOS = [
   }
 ];
 
-const url = process.env.SUPABASE_URL;
-const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !chave) {
-  console.error('Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de rodar.');
-  process.exit(1);
-}
-if (!existsSync(pasta)) {
-  console.error(`Pasta não encontrada: ${pasta}`);
-  process.exit(1);
-}
-
-const sb = createClient(url, chave, { auth: { persistSession: false, autoRefreshToken: false } });
-let falhas = 0;
-
-for (const r of RELATORIOS) {
-  const origem = join(pasta, r.arquivo);
-  if (!existsSync(origem)) {
-    console.error(`Faltando: ${origem}`);
-    falhas++;
-    continue;
+// Envia cada PDF (substitui o arquivo se já existir) e cria ou atualiza a linha em "relatorios".
+// Devolve o número de falhas.
+export async function enviarRelatorios(sb, pasta = PASTA_PADRAO) {
+  if (!existsSync(pasta)) {
+    console.error(`Pasta não encontrada: ${pasta}`);
+    return RELATORIOS.length;
   }
-  const tamanho = (statSync(origem).size / 1024 / 1024).toFixed(1);
-  process.stdout.write(`Enviando ${r.arquivo} (${tamanho} MB)... `);
+  let falhas = 0;
+  for (const r of RELATORIOS) {
+    const origem = join(pasta, r.arquivo);
+    if (!existsSync(origem)) {
+      console.error(`Faltando: ${origem}`);
+      falhas++;
+      continue;
+    }
+    const tamanho = (statSync(origem).size / 1024 / 1024).toFixed(1);
+    process.stdout.write(`Enviando ${r.arquivo} (${tamanho} MB)... `);
 
-  const envio = await sb.storage.from(BUCKET).upload(r.caminho, readFileSync(origem), {
-    contentType: 'application/pdf',
-    cacheControl: '86400',
-    upsert: true
-  });
-  if (envio.error) {
-    console.error(`erro: ${envio.error.message}`);
-    falhas++;
-    continue;
-  }
+    const envio = await sb.storage.from(BUCKET).upload(r.caminho, readFileSync(origem), {
+      contentType: 'application/pdf',
+      cacheControl: '86400',
+      upsert: true
+    });
+    if (envio.error) {
+      console.error(`erro: ${envio.error.message}`);
+      falhas++;
+      continue;
+    }
 
-  const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(r.caminho);
-  const linha = { titulo: r.titulo, tipo: 'Relatório', data: r.data, arquivo_url: pub.publicUrl };
+    const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(r.caminho);
+    const linha = { titulo: r.titulo, tipo: 'Relatório', data: r.data, arquivo_url: pub.publicUrl };
 
-  const existente = await sb.from('relatorios').select('id').eq('arquivo_url', pub.publicUrl).maybeSingle();
-  if (existente.error) {
-    console.error(`erro ao consultar: ${existente.error.message}`);
-    falhas++;
-    continue;
+    const existente = await sb.from('relatorios').select('id').eq('arquivo_url', pub.publicUrl).maybeSingle();
+    if (existente.error) {
+      console.error(`erro ao consultar: ${existente.error.message}`);
+      falhas++;
+      continue;
+    }
+    const gravar = existente.data
+      ? await sb.from('relatorios').update(linha).eq('id', existente.data.id)
+      : await sb.from('relatorios').insert(linha);
+    if (gravar.error) {
+      console.error(`erro ao gravar: ${gravar.error.message}`);
+      falhas++;
+      continue;
+    }
+    console.log(existente.data ? 'atualizado' : 'cadastrado');
   }
-  const gravar = existente.data
-    ? await sb.from('relatorios').update(linha).eq('id', existente.data.id)
-    : await sb.from('relatorios').insert(linha);
-  if (gravar.error) {
-    console.error(`erro ao gravar: ${gravar.error.message}`);
-    falhas++;
-    continue;
-  }
-  console.log(existente.data ? 'atualizado' : 'cadastrado');
+  return falhas;
 }
 
-console.log(falhas ? `\nTerminou com ${falhas} falha(s).` : '\nPronto: os 3 relatórios estão no portal.');
-process.exit(falhas ? 1 : 0);
+// Uso direto pela linha de comando
+if (resolve(process.argv[1] || '').toLowerCase() === fileURLToPath(import.meta.url).toLowerCase()) {
+  const url = process.env.SUPABASE_URL;
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !chave) {
+    console.error('Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de rodar.');
+    process.exit(1);
+  }
+  const sb = createClient(url, chave, { auth: { persistSession: false, autoRefreshToken: false } });
+  const falhas = await enviarRelatorios(sb, resolve(process.argv[2] || PASTA_PADRAO));
+  console.log(falhas ? `\nTerminou com ${falhas} falha(s).` : '\nPronto: os 3 relatórios estão no portal.');
+  process.exit(falhas ? 1 : 0);
+}
