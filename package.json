@@ -1,0 +1,18 @@
+{
+  "name": "portal-cpa-impacta",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portal da CPA da Faculdade Impacta: dashboards, mural de devolutivas, relatórios e contato.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "check": "node scripts/checar-sintaxe.mjs",
+    "upload-relatorios": "node scripts/upload-relatorios.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.1"
+  }
+}
