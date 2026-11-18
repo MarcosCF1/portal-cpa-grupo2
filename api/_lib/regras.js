@@ -23,11 +23,17 @@ export function nomeDoEmail(email) {
 export async function buscarCadastro(sb, email) {
   const { data, error } = await sb
     .from('usuarios_cpa')
-    .select('email, nome, role, expira_em, protegido')
+    .select('email, nome, role, expira_em, protegido, criado_por, atualizado_por')
     .eq('email', email)
     .maybeSingle();
   if (error) throw error;
   return data || null;
+}
+
+// Acesso criado ou alterado por uma conta de demonstração (senha pública):
+// vale só dentro do portal, sem envio de e-mail.
+export function cadastroDaDemo(cadastro) {
+  return !!cadastro && [cadastro.criado_por, cadastro.atualizado_por].some((e) => RE_DEMO.test(String(e || '')));
 }
 
 export function cadastroValido(cadastro) {

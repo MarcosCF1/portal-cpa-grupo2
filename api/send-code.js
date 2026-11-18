@@ -10,7 +10,7 @@ import { sendEmail } from './_lib/email.js';
 import { emailCodigo } from './_lib/emails.js';
 import {
   RE_EMAIL, RE_ALUNO, RE_DEMO, normalizarEmail, nomeDoEmail,
-  buscarCadastro, cadastroValido, dataBR
+  buscarCadastro, cadastroValido, cadastroDaDemo, dataBR
 } from './_lib/regras.js';
 
 const JANELA_MIN = 10;
@@ -55,6 +55,12 @@ export default async function handler(req, res) {
         return erro(res, 403, 'Este e-mail @impacta.edu.br ainda não foi autorizado. Peça a liberação à CPA.', { motivo: 'nao_autorizado' });
       }
       return erro(res, 403, 'Este e-mail não tem acesso ao portal. Alunos entram com o @aluno.impacta.edu.br; coordenação e avaliadores externos precisam ser autorizados pela CPA.', { motivo: 'nao_autorizado' });
+    }
+
+    // Acessos liberados pela conta de demonstração não disparam e-mail
+    // (a senha da demonstração é pública e não pode virar um meio de mandar e-mails)
+    if (cadastroValido(cadastro) && cadastroDaDemo(cadastro) && !ehAluno) {
+      return erro(res, 403, 'Este acesso foi liberado pela conta de demonstração e não recebe código por e-mail. Peça a liberação à CPA.', { motivo: 'demo' });
     }
 
     // 2. Limite de envios

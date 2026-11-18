@@ -36,6 +36,10 @@ const ok = (nome, cond, extra = '') => res.push({ grupo, nome, ok: !!cond, extra
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 const pdfTeste = join(tmpdir(), 'portal-cpa-teste.pdf');
 writeFileSync(pdfTeste, '%PDF-1.4\n%teste\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF');
+const txtTeste = join(tmpdir(), 'portal-cpa-teste.txt');
+writeFileSync(txtTeste, 'arquivo de texto');
+const pdfGrande = join(tmpdir(), 'portal-cpa-grande.pdf');
+writeFileSync(pdfGrande, Buffer.alloc(51 * 1024 * 1024, 32));
 
 const browser = await puppeteer.launch({ executablePath: NAVEGADOR, headless: 'new', args: ['--no-first-run'] });
 
@@ -113,6 +117,7 @@ async function publico(modo) {
   await abrir(p, 'mural');
   ok('mural carrega devolutivas', (await p.$$('.devolutiva')).length >= 3);
   ok('sem botões de administração', (await p.$$('[data-act="mural-status"]')).length === 0);
+  ok('menu sem "Dashboards" e sem "Acessos e Perfis"', !(await p.$('a[href="#dashboards"]')) && !(await p.$('a[href="#acessos"]')));
   await print(p, '01-mural');
   await p.click('[data-act="filtro"][data-id="Resolvido"]');
   await espera(300);
@@ -292,6 +297,14 @@ async function administracao(modo) {
   await ir(p, 'relatorios', '.doc');
   await p.evaluate(() => { document.querySelector('details.admin').open = true; });
   await p.type('#r-titulo', 'Boletim de teste');
+  await (await p.$('#r-arquivo')).uploadFile(txtTeste);
+  await p.click('form[data-form="rel-novo"] [type=submit]');
+  await espera(300);
+  ok('arquivo que não é PDF é recusado na tela', /precisa ser um PDF/.test(await texto(p, '#r-erro')));
+  await (await p.$('#r-arquivo')).uploadFile(pdfGrande);
+  await p.click('form[data-form="rel-novo"] [type=submit]');
+  await espera(300);
+  ok('PDF acima de 50 MB é recusado na tela', /50 MB/.test(await texto(p, '#r-erro')));
   await (await p.$('#r-arquivo')).uploadFile(pdfTeste);
   await print(p, '56-admin-enviar-pdf');
   await p.click('form[data-form="rel-novo"] [type=submit]');
@@ -347,6 +360,7 @@ async function administracao(modo) {
   await p.click('form[data-form="convidar"] [type=submit]');
   await p.waitForFunction(() => /avaliadora\.teste/.test(document.querySelector('table')?.textContent || ''), { timeout: 15000 });
   ok('convida avaliador (demo não envia e-mail)', (await db.query(`select expira_em from usuarios_cpa where email = 'avaliadora.teste@exemplo.gov.br'`)).rowCount === 1);
+  ok('tela avisa que o convite não foi enviado por e-mail', /não é enviado/.test(await texto(p, '#toast')), await texto(p, '#toast'));
   await db.query(`delete from usuarios_cpa where email = 'avaliadora.teste@exemplo.gov.br'`);
   await p.evaluate(() => document.querySelector('[data-act="aba"][data-id="visibilidade"]').click());
   await espera(400);
